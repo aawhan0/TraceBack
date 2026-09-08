@@ -40,7 +40,9 @@ class InvestigationService:
         diagnosis = investigator.investigate(scenario.incident)
         evaluation = evaluate_diagnosis(scenario, diagnosis)
         duration_ms = (perf_counter() - started) * 1000
+        run_id = str(uuid4())
         result = InvestigationResult(
+            run_id=run_id,
             scenario_id=scenario.id,
             diagnosis=diagnosis,
             evaluation=evaluation,
@@ -49,7 +51,7 @@ class InvestigationService:
         store = run_store or SQLiteRunStore()
         store.save(
             InvestigationRun(
-                run_id=str(uuid4()),
+                run_id=run_id,
                 scenario_id=result.scenario_id,
                 mode="llm" if provider is not None else "baseline",
                 provider=getattr(provider, "name", "baseline") if provider is not None else "baseline",
