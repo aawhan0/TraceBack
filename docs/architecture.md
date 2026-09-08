@@ -58,6 +58,21 @@ The repository now has a working deterministic control path around the future LL
 
 The baseline investigator is deliberately replaceable. It exists to prove the contracts and orchestration before model behavior is introduced.
 
+## Current implementation boundary
+
+Traceback now has both sides of the agent boundary:
+
+- a deterministic baseline investigator
+- an LLM investigator with a provider protocol
+- an Ollama HTTP provider
+- strict Diagnosis parsing and validation
+- a constrained scenario evidence tool
+- a real MCP server exposing incident evidence
+- deterministic per-run and aggregate evaluation
+- comparison utilities for experiments
+
+FastAPI remains the application-facing API while MCP is the model-facing tool protocol.
+
 ## Main Components
 
 ### Incident
