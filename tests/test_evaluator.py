@@ -1,7 +1,6 @@
 from app.evaluation.evaluator import evaluate_diagnosis
 from app.models.domain import Diagnosis
-from app.scenarios.catalog import DATABASE_POOL_EXHAUSTION
-from app.scenarios.catalog import REDIS_CONNECTIVITY_FAILURE
+from app.scenarios.catalog import DATABASE_POOL_EXHAUSTION, REDIS_CONNECTIVITY_FAILURE
 
 
 def test_correct_database_diagnosis_passes() -> None:
