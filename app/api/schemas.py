@@ -27,7 +27,3 @@ class InvestigationResponse(BaseModel):
     duration_ms: float
     created_at: datetime
 
-
-class RunListQuery(BaseModel):
-    scenario_id: str | None = Field(default=None, min_length=1)
-    limit: int = Field(default=50, ge=1, le=200)
