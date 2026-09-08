@@ -1,3 +1,5 @@
+import pytest
+
 from app.agent.baseline import BaselineInvestigator
 from app.evaluation.aggregate import aggregate_evaluations
 from app.evaluation.evaluator import evaluate_diagnosis
@@ -29,4 +31,4 @@ def test_aggregate_evaluation_summarizes_repeated_runs() -> None:
     assert aggregate.total_runs == 2
     assert aggregate.passed_runs == 2
     assert aggregate.pass_rate == 1.0
-    assert aggregate.average_confidence == 0.85
+    assert aggregate.average_confidence == pytest.approx(0.85)
