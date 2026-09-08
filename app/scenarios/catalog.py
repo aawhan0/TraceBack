@@ -1,4 +1,8 @@
-from app.models.domain import Evidence, Incident, IncidentScenario
+from app.models.domain import (
+    Evidence,
+    Incident,
+    IncidentScenario,
+)
 
 
 DATABASE_POOL_EXHAUSTION = IncidentScenario(
