@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import InvestigationRequest, InvestigationResponse
 from app.config import Settings
-from app.models.domain import HealthResponse
+from app.models.domain import HealthResponse, InvestigationRun, RunSummary
 from app.providers.ollama import OllamaProvider
+from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS, get_scenario
 from app.services.investigation import InvestigationService
 
@@ -63,4 +64,28 @@ def investigate(request: InvestigationRequest) -> InvestigationResponse:
         confidence_valid=result.evaluation.confidence_valid,
         action_present=result.evaluation.action_present,
         passed=result.evaluation.passed,
+        run_id=result.run_id,
+        duration_ms=result.duration_ms,
+        created_at=result.created_at,
     )
+
+
+
+def _run_store() -> SQLiteRunStore:
+    return SQLiteRunStore(Settings.from_environment().database_path)
+
+
+@router.get("/runs", response_model=list[RunSummary], tags=["runs"])
+def list_runs(scenario_id: str | None = None, limit: int = 50) -> list[RunSummary]:
+    try:
+        return list(_run_store().list(scenario_id=scenario_id, limit=limit))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/runs/{run_id}", response_model=InvestigationRun, tags=["runs"])
+def get_run(run_id: str) -> InvestigationRun:
+    run = _run_store().get(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Investigation run not found")
+    return run
