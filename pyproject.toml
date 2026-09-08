@@ -35,7 +35,6 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
-force-single-line = true
 
 [tool.setuptools.packages.find]
 include = ["app*"]
