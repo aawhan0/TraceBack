@@ -20,6 +20,34 @@ def test_investigation_endpoint_runs_baseline() -> None:
     assert payload["evidence_recall"] == 1.0
 
 
+def test_investigation_result_is_persisted_and_retrievable(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "api.db"))
+    response = client.post("/investigations", json={"scenario_id": "database-pool-exhaustion"})
+    assert response.status_code == 200
+
+    payload = response.json()
+    run_id = payload["run_id"]
+
+    detail = client.get(f"/runs/{run_id}")
+    assert detail.status_code == 200
+    assert detail.json()["run_id"] == run_id
+    assert detail.json()["diagnosis"]["incident_id"] == "inc-001"
+
+    history = client.get("/runs", params={"scenario_id": "database-pool-exhaustion"})
+    assert history.status_code == 200
+    assert history.json()[0]["run_id"] == run_id
+
+    stats = client.get("/runs/stats", params={"scenario_id": "database-pool-exhaustion"})
+    assert stats.status_code == 200
+    assert stats.json()["total_runs"] == 1
+    assert stats.json()["passed_runs"] == 1
+
+
+def test_missing_run_returns_404() -> None:
+    response = client.get("/runs/does-not-exist")
+    assert response.status_code == 404
+
+
 def test_unknown_scenario_returns_404() -> None:
     response = client.post("/investigations", json={"scenario_id": "missing"})
     assert response.status_code == 404
