@@ -68,3 +68,11 @@ class RunSummary(BaseModel):
     confidence: float = Field(ge=0, le=1)
     duration_ms: float = Field(ge=0)
     created_at: datetime
+
+
+class RunStats(BaseModel):
+    total_runs: int = Field(ge=0)
+    passed_runs: int = Field(ge=0)
+    pass_rate: float = Field(ge=0, le=1)
+    average_confidence: float = Field(ge=0, le=1)
+    average_duration_ms: float = Field(ge=0)
