@@ -83,6 +83,11 @@ def list_runs(scenario_id: str | None = None, limit: int = 50) -> list[RunSummar
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.get("/runs/stats", response_model=object, tags=["runs"])
+def run_stats(scenario_id: str | None = None):
+    return _run_store().stats(scenario_id=scenario_id)
+
+
 @router.get("/runs/{run_id}", response_model=InvestigationRun, tags=["runs"])
 def get_run(run_id: str) -> InvestigationRun:
     run = _run_store().get(run_id)
