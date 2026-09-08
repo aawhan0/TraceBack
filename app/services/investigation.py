@@ -7,6 +7,7 @@ from app.agent.baseline import BaselineInvestigator
 from app.agent.contracts import Investigator, LLMProvider
 from app.agent.llm import LLMInvestigator
 from app.evaluation.evaluator import EvaluationResult, evaluate_diagnosis
+from app.config import Settings
 from app.models.domain import Diagnosis, IncidentScenario, InvestigationRun
 from app.repository.runs import RunStore, SQLiteRunStore, utc_now
 
@@ -54,7 +55,7 @@ class InvestigationService:
             duration_ms=duration_ms,
             created_at=created_at,
         )
-        store = run_store or SQLiteRunStore()
+        store = run_store or SQLiteRunStore(Settings.from_environment().database_path)
         store.save(
             InvestigationRun(
                 run_id=run_id,
