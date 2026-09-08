@@ -12,6 +12,7 @@ from app.repository.runs import RunStore, SQLiteRunStore, utc_now
 
 @dataclass(frozen=True)
 class InvestigationResult:
+    run_id: str
     scenario_id: str
     diagnosis: Diagnosis
     evaluation: EvaluationResult
