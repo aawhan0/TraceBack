@@ -324,6 +324,47 @@ The current baseline is deliberately not presented as an LLM agent. The importan
 
 The next implementation can replace the baseline investigator with an LLM-backed implementation and replace ScenarioEvidenceTool with real MCP-backed tools while preserving the evaluation contract.
 
+## What is implemented now?
+
+Traceback has moved beyond the deterministic foundation. The repository now contains:
+
+- a deterministic baseline investigator
+- an LLM investigator with a provider protocol
+- a local Ollama provider
+- strict JSON-to-Diagnosis parsing
+- a real MCP evidence server using the official MCP Python SDK
+- a constrained evidence tool with list/get/search operations
+- per-run evaluation reports
+- aggregate evaluation across scenarios
+- experiment comparison deltas
+- an API switch between baseline and LLM investigation modes
+
+The model path and the baseline path share the same Diagnosis contract and deterministic evaluator. This makes future model comparisons meaningful rather than anecdotal.
+
+### MCP development
+
+The evidence server can be launched locally with:
+
+python -m app.mcp.server
+
+For MCP Inspector development, use:
+
+mcp dev app/mcp/server.py
+
+The MCP server exposes get_incident_evidence and intentionally has access only to version-controlled scenario evidence.
+
+### LLM development
+
+Baseline investigation requires no model runtime.
+
+LLM mode uses Ollama by default and reads:
+
+- TRACEBACK_MODEL
+- OLLAMA_BASE_URL
+- TRACEBACK_OLLAMA_TIMEOUT
+
+See docs/llm.md and docs/mcp.md for the detailed boundaries.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull request guidance.
