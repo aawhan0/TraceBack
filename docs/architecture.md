@@ -225,3 +225,28 @@ Traceback is not intended to become:
 - a collection of dozens of superficial integrations
 
 The system should stay focused on **LLM-assisted incident diagnosis and measurable reliability**.
+
+
+## Persistence boundary
+
+Completed investigations are persisted after deterministic evaluation. The application service owns orchestration; the repository owns storage.
+
+```text
+FastAPI / CLI
+     |
+     v
+InvestigationService
+     |
+     +--> Investigator
+     |      +--> Baseline
+     |      +--> LLM -> Provider
+     |
+     +--> Evaluator
+     |
+     +--> RunStore -> SQLite
+     |
+     v
+InvestigationRun
+```
+
+The `RunStore` protocol keeps SQLite-specific details out of the investigation domain. This makes historical runs available now while leaving room for a shared datastore later.
