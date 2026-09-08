@@ -275,6 +275,55 @@ The current implementation priorities are:
 10. Record actual quantitative results.
 11. Polish documentation and portfolio presentation.
 
+## What is actually implemented?
+
+Traceback now has a working deterministic control path before any LLM dependency is introduced:
+
+1. Select a version-controlled incident scenario.
+2. Retrieve attributable evidence through a constrained investigation tool.
+3. Produce a validated Diagnosis.
+4. Evaluate root cause, evidence grounding, confidence, and action presence deterministically.
+5. Expose the flow through FastAPI.
+6. Aggregate repeated evaluations for future model experiments.
+
+This is intentional. The first LLM investigator will be measured against a working baseline rather than being allowed to define what "working" means.
+
+## API quick start
+
+Start the service:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Useful endpoints:
+
+- `GET /health`
+- `GET /scenarios`
+- `GET /scenarios/{scenario_id}`
+- `POST /investigations`
+
+Run a baseline investigation:
+
+```bash
+curl -X POST http://127.0.0.1:8000/investigations \
+  -H 'Content-Type: application/json' \
+  -d '{"scenario_id":"database-pool-exhaustion"}'
+```
+
+The generated API documentation is available at `/docs`.
+
+## Development boundary
+
+The current baseline is deliberately not presented as an LLM agent. The important interfaces are already separated:
+
+- **Investigator** — produces a structured diagnosis.
+- **InvestigationTool** — provides attributable operational evidence.
+- **Evaluator** — measures the diagnosis without changing it.
+- **InvestigationService** — orchestrates the application flow.
+
+The next implementation can replace the baseline investigator with an LLM-backed implementation and replace ScenarioEvidenceTool with real MCP-backed tools while preserving the evaluation contract.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull request guidance.

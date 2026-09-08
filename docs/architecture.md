@@ -45,6 +45,19 @@ The architecture is intentionally small. The project is designed to demonstrate 
 └─────────────────────┘
 ```
 
+## Current implementation boundary
+
+The repository now has a working deterministic control path around the future LLM/MCP integrations:
+
+- the API selects a version-controlled scenario
+- the service invokes an investigator
+- the investigator retrieves evidence through a tool contract
+- the diagnosis is validated by Pydantic
+- deterministic evaluation measures the result
+- aggregate evaluation summarizes repeated runs
+
+The baseline investigator is deliberately replaceable. It exists to prove the contracts and orchestration before model behavior is introduced.
+
 ## Main Components
 
 ### Incident
