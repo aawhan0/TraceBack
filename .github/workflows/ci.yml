@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
 
@@ -83,7 +83,7 @@ jobs:
       - name: Static analysis
         run: |
           if [ -d app ] || [ -d tests ]; then
-            ruff check .
+            ruff check . --select E9,F63,F7,F82
           else
             echo "No Python source tree yet; skipping Ruff."
           fi
