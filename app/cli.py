@@ -30,6 +30,9 @@ def main() -> None:
     runs.add_argument("--scenario-id")
     runs.add_argument("--limit", type=int, default=20)
 
+    stats = subparsers.add_parser("stats", help="Show aggregate persisted run statistics.")
+    stats.add_argument("--scenario-id")
+
     show = subparsers.add_parser("show", help="Show one persisted investigation run.")
     show.add_argument("run_id")
 
@@ -43,6 +46,10 @@ def main() -> None:
 
     if args.command == "runs":
         _json([item.model_dump(mode="json") for item in store.list(args.scenario_id, args.limit)])
+        return
+
+    if args.command == "stats":
+        _json(store.stats(scenario_id=args.scenario_id).model_dump(mode="json"))
         return
 
     if args.command == "show":
