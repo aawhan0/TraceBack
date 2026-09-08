@@ -26,4 +26,3 @@ class InvestigationResponse(BaseModel):
     run_id: str
     duration_ms: float
     created_at: datetime
-
