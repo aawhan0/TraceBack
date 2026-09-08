@@ -14,3 +14,7 @@ venv/
 dist/
 build/
 .DS_Store
+
+# Local Traceback run database
+data/*.db
+data/*.db-*

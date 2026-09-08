@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -22,3 +23,6 @@ class InvestigationResponse(BaseModel):
     confidence_valid: bool
     action_present: bool
     passed: bool
+    run_id: str
+    duration_ms: float
+    created_at: datetime
