@@ -341,7 +341,33 @@ Traceback has moved beyond the deterministic foundation. The repository now cont
 
 The model path and the baseline path share the same Diagnosis contract and deterministic evaluator. This makes future model comparisons meaningful rather than anecdotal.
 
-### MCP development
+#
+## Investigation history
+
+Every completed investigation now receives a stable run ID and is persisted locally in SQLite. This makes results inspectable after the original request and provides a foundation for regression tracking and model experiments.
+
+### API
+
+- `POST /investigations` — run and persist an investigation
+- `GET /runs` — list recent runs, optionally filtered by scenario
+- `GET /runs/{run_id}` — inspect a complete persisted run
+- `GET /runs/stats` — aggregate historical pass rate, confidence, and latency
+
+### CLI
+
+After installing the project:
+
+```bash
+traceback scenarios
+traceback investigate database-pool-exhaustion
+traceback runs --scenario-id database-pool-exhaustion
+traceback show <run-id>
+traceback stats --scenario-id database-pool-exhaustion
+```
+
+See [docs/runs.md](docs/runs.md) for the persistence contract.
+
+## MCP development
 
 The evidence server can be launched locally with:
 
