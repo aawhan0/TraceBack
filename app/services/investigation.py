@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from time import perf_counter
 from uuid import uuid4
 
@@ -18,7 +19,7 @@ class InvestigationResult:
     evaluation: EvaluationResult
     investigator: str
     duration_ms: float
-    created_at: object
+    created_at: datetime
 
 
 class InvestigationService:
