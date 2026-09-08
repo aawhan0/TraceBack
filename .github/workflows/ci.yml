@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-hygiene:
+    name: Repository Hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check changed files for whitespace errors
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}...HEAD"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            git diff --check "${{ github.event.before }}...HEAD"
+          else
+            git diff --check HEAD^...HEAD 2>/dev/null || true
+          fi
+
+      - name: Validate GitHub Actions workflows
+        uses: raven-actions/actionlint@v2
+
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements*.txt
+
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f pyproject.toml ]; then
+            pip install -e ".[dev]" || pip install -e .
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+
+          pip install pytest pytest-cov ruff
+
+      - name: Check dependency consistency
+        run: pip check
+
+      - name: Static analysis
+        run: |
+          if [ -d src ] || [ -d app ] || [ -d tests ]; then
+            ruff check src app tests 2>/dev/null || ruff check .
+          else
+            echo "No Python source tree yet; skipping Ruff."
+          fi
+
+      - name: Compile Python
+        run: |
+          if [ -d src ] || [ -d app ] || [ -d tests ]; then
+            python -m compileall -q src app tests 2>/dev/null || python -m compileall -q .
+          else
+            echo "No Python source tree yet; skipping compilation."
+          fi
+
+      - name: Run tests with coverage
+        run: |
+          if [ -d tests ]; then
+            pytest -q --cov=. --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=test-results.xml
+          else
+            echo "No tests directory yet; skipping pytest."
+          fi
+
+      - name: Upload coverage
+        if: always() && hashFiles('coverage.xml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+          retention-days: 7
+
+      - name: Upload test results
+        if: always() && hashFiles('test-results.xml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          retention-days: 7
