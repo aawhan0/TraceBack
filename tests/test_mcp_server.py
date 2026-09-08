@@ -13,7 +13,11 @@ def test_mcp_server_exposes_evidence_tool() -> None:
 
             result = await client.call_tool(
                 "get_incident_evidence",
-                {"scenario_id": "database-pool-exhaustion", "operation": "get", "evidence_id": "ev-db-001"},
+                {
+                    "scenario_id": "database-pool-exhaustion",
+                    "operation": "get",
+                    "evidence_id": "ev-db-001",
+                },
             )
             assert result.structured_content is not None
             assert result.structured_content["result"][0]["id"] == "ev-db-001"
