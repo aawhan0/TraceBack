@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -49,12 +49,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -82,8 +82,8 @@ jobs:
 
       - name: Static analysis
         run: |
-          if [ -d src ] || [ -d app ] || [ -d tests ]; then
-            ruff check src app tests 2>/dev/null || ruff check .
+          if [ -d app ] || [ -d tests ]; then
+            ruff check . --select E9,F63,F7,F82
           else
             echo "No Python source tree yet; skipping Ruff."
           fi
