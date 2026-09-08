@@ -17,6 +17,8 @@ class InvestigationResult:
     diagnosis: Diagnosis
     evaluation: EvaluationResult
     investigator: str
+    duration_ms: float
+    created_at: object
 
 
 class InvestigationService:
@@ -41,12 +43,15 @@ class InvestigationService:
         evaluation = evaluate_diagnosis(scenario, diagnosis)
         duration_ms = (perf_counter() - started) * 1000
         run_id = str(uuid4())
+        created_at = utc_now()
         result = InvestigationResult(
             run_id=run_id,
             scenario_id=scenario.id,
             diagnosis=diagnosis,
             evaluation=evaluation,
             investigator=type(investigator).__name__,
+            duration_ms=duration_ms,
+            created_at=created_at,
         )
         store = run_store or SQLiteRunStore()
         store.save(
@@ -63,7 +68,7 @@ class InvestigationService:
                 action_present=result.evaluation.action_present,
                 passed=result.evaluation.passed,
                 duration_ms=duration_ms,
-                created_at=utc_now(),
+                created_at=created_at,
             )
         )
         return result
