@@ -1,7 +1,9 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.domain import Diagnosis, Evidence, Incident
+from app.models.domain import Diagnosis
+from app.models.domain import Evidence
+from app.models.domain import Incident
 
 
 def test_diagnosis_rejects_invalid_confidence() -> None:
