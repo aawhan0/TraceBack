@@ -26,19 +26,23 @@ def evaluate_diagnosis(
     scenario: IncidentScenario,
     diagnosis: Diagnosis,
 ) -> EvaluationResult:
+    if diagnosis.incident_id != scenario.incident.id:
+        raise ValueError("Diagnosis does not belong to the scenario")
+
     required = set(scenario.required_evidence_ids)
     selected = set(diagnosis.evidence_ids)
     valid_evidence = {item.id for item in scenario.evidence}
 
-    if required:
-        evidence_recall = len(required & selected) / len(required)
-    else:
-        evidence_recall = 1.0
-
-    if selected:
-        evidence_precision = len(selected & valid_evidence) / len(selected)
-    else:
-        evidence_precision = 1.0 if not required else 0.0
+    evidence_recall = (
+        len(required & selected) / len(required)
+        if required
+        else 1.0
+    )
+    evidence_precision = (
+        len(selected & valid_evidence) / len(selected)
+        if selected
+        else (1.0 if not required else 0.0)
+    )
 
     normalized_root_cause = diagnosis.root_cause.casefold()
     root_cause_match = all(
@@ -46,13 +50,10 @@ def evaluate_diagnosis(
         for keyword in scenario.root_cause_keywords
     )
 
-    confidence_valid = 0.0 <= diagnosis.confidence <= 1.0
-    action_present = bool(diagnosis.recommended_action.strip())
-
     return EvaluationResult(
         root_cause_match=root_cause_match,
         evidence_recall=evidence_recall,
         evidence_precision=evidence_precision,
-        confidence_valid=confidence_valid,
-        action_present=action_present,
+        confidence_valid=0.0 <= diagnosis.confidence <= 1.0,
+        action_present=bool(diagnosis.recommended_action.strip()),
     )
