@@ -82,8 +82,8 @@ jobs:
 
       - name: Static analysis
         run: |
-          if [ -d src ] || [ -d app ] || [ -d tests ]; then
-            ruff check src app tests 2>/dev/null || ruff check .
+          if [ -d app ] || [ -d tests ]; then
+            ruff check .
           else
             echo "No Python source tree yet; skipping Ruff."
           fi
