@@ -5,12 +5,46 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
-from app.models.domain import Diagnosis, InvestigationRun, RunSummary
+from app.models.domain import Diagnosis, InvestigationRun, RunStats, RunSummary
 
 
 class RunStore(Protocol):
     def save(self, run: InvestigationRun) -> None:
         """Persist an investigation run."""
+
+    def stats(self, scenario_id: str | None = None) -> RunStats:
+        """Calculate aggregate statistics over persisted runs."""
+        query = "SELECT passed, diagnosis_json, duration_ms FROM investigation_runs"
+        parameters: tuple[object, ...] = ()
+        if scenario_id:
+            query += " WHERE scenario_id = ?"
+            parameters = (scenario_id,)
+
+        with self._connect() as connection:
+            rows = connection.execute(query, parameters).fetchall()
+
+        if not rows:
+            return RunStats(
+                total_runs=0,
+                passed_runs=0,
+                pass_rate=0.0,
+                average_confidence=0.0,
+                average_duration_ms=0.0,
+            )
+
+        confidences = [
+            Diagnosis.model_validate_json(row["diagnosis_json"]).confidence
+            for row in rows
+        ]
+        total = len(rows)
+        passed = sum(bool(row["passed"]) for row in rows)
+        return RunStats(
+            total_runs=total,
+            passed_runs=passed,
+            pass_rate=passed / total,
+            average_confidence=sum(confidences) / total,
+            average_duration_ms=sum(row["duration_ms"] for row in rows) / total,
+        )
 
     def get(self, run_id: str) -> InvestigationRun | None:
         """Return one run, if it exists."""
