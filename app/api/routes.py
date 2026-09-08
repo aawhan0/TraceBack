@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import InvestigationRequest, InvestigationResponse
 from app.config import Settings
-from app.models.domain import HealthResponse, InvestigationRun, RunSummary
+from app.models.domain import HealthResponse, InvestigationRun, RunStats, RunSummary
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS, get_scenario
@@ -83,7 +83,7 @@ def list_runs(scenario_id: str | None = None, limit: int = 50) -> list[RunSummar
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@router.get("/runs/stats", response_model=object, tags=["runs"])
+@router.get("/runs/stats", response_model=RunStats, tags=["runs"])
 def run_stats(scenario_id: str | None = None):
     return _run_store().stats(scenario_id=scenario_id)
 
