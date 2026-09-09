@@ -136,7 +136,7 @@ async function compareSelected(){
  if(chosen.length!==2){alert("Select exactly two experiments.");return}
  try{const r=await api("/experiments/"+encodeURIComponent(chosen[0])+"/compare/"+encodeURIComponent(chosen[1]));
  $("compareResult").classList.remove("hidden");
- $("compareMetrics").innerHTML='<div class="metric"><span>Pass-rate delta</span><strong class="'+(r.pass_rate_delta>=0?"good":"bad")+'">'+pct(r.pass_rate_delta)+'</strong></div>'+
+ $("compareMetrics").innerHTML='<div class="metric"><span>Pass-rate delta</span><strong class="'+(r.metrics.pass_rate.delta>=0?"good":"bad")+'">'+pct(r.metrics.pass_rate.delta)+'</strong></div>'+
  '<div class="metric"><span>Confidence delta</span><strong>'+Number(r.average_confidence_delta).toFixed(3)+'</strong></div>'+
  '<div class="metric"><span>Latency delta</span><strong>'+ms(r.average_duration_delta)+'</strong></div>'+
  '<div class="metric"><span>Verdict</span><strong class="'+(r.verdict==="improved"?"good":r.verdict==="regressed"?"bad":"muted")+'">'+escapeHtml(r.verdict)+'</strong></div>';
