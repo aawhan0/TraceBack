@@ -7,8 +7,8 @@ from app.evaluation.markdown import render_experiment_markdown
 from app.evaluation.regression import RegressionPolicy
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
-from app.services.benchmark import BenchmarkRequest, BenchmarkService, assert_regression
 from app.scenarios.catalog import SCENARIOS, get_scenario
+from app.services.benchmark import BenchmarkRequest, BenchmarkService, assert_regression
 from app.services.investigation import InvestigationService
 
 
@@ -30,13 +30,22 @@ def main() -> None:
     investigate.add_argument("--mode", choices=("baseline", "llm"), default="baseline")
     investigate.add_argument("--model")
 
-    benchmark = subparsers.add_parser("benchmark", help="Run a repeatable experiment across scenarios.")
+    benchmark = subparsers.add_parser(
+        "benchmark",
+        help="Run a repeatable experiment across scenarios.",
+    )
     benchmark.add_argument("--scenario-id", action="append", dest="scenario_ids")
     benchmark.add_argument("--repetitions", type=int, default=1)
     benchmark.add_argument("--name", default="cli-benchmark")
+    benchmark.add_argument("--mode", choices=("baseline", "llm"), default="baseline")
+    benchmark.add_argument("--model", help="Ollama model for LLM benchmarks.")
     benchmark.add_argument("--min-pass-rate", type=float, default=1.0)
     benchmark.add_argument("--report", action="store_true", help="Render a Markdown benchmark report.")
-    benchmark.add_argument("--fail-on-regression", action="store_true", help="Exit non-zero when the gate fails.")
+    benchmark.add_argument(
+        "--fail-on-regression",
+        action="store_true",
+        help="Exit non-zero when the gate fails.",
+    )
 
     experiments = subparsers.add_parser("experiments", help="List persisted benchmark experiments.")
     experiments.add_argument("--limit", type=int, default=20)
@@ -73,6 +82,8 @@ def main() -> None:
                     dataset,
                     args.repetitions,
                     RegressionPolicy(minimum_pass_rate=args.min_pass_rate),
+                    mode=args.mode,
+                    model=args.model,
                 ),
                 catalog,
             )
@@ -87,6 +98,7 @@ def main() -> None:
                 "regression_passed": result.regression.passed,
                 "regression_failures": [failure.__dict__ for failure in result.regression.failures],
                 "dataset_fingerprint": result.dataset_fingerprint,
+                "provenance": result.provenance.as_dict(),
             })
         if args.fail_on_regression:
             try:
@@ -107,6 +119,7 @@ def main() -> None:
                 "dataset": f"{record.dataset_name}@{record.dataset_version}",
                 "pass_rate": record.result.pass_rate,
                 "regression_passed": record.regression.passed if record.regression else None,
+                "provenance": record.provenance.as_dict() if record.provenance else None,
                 "created_at": record.created_at,
             }
             for record in records
@@ -132,6 +145,7 @@ def main() -> None:
                 if record.regression
                 else None
             ),
+            "provenance": record.provenance.as_dict() if record.provenance else None,
             "created_at": record.created_at,
         })
         return
