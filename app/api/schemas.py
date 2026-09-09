@@ -28,6 +28,30 @@ class InvestigationResponse(BaseModel):
     created_at: datetime
 
 
+class MatrixConfigurationRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    mode: Literal["baseline", "llm"] = "baseline"
+    model: str | None = Field(default=None, min_length=1)
+
+
+class MatrixRequest(BaseModel):
+    matrix_id: str = Field(min_length=1, max_length=100)
+    scenario_ids: list[str] = Field(min_length=1, max_length=20)
+    configurations: list[MatrixConfigurationRequest] = Field(min_length=1, max_length=20)
+    repetitions: int = Field(default=1, ge=1, le=100)
+    min_pass_rate: float = Field(default=1.0, ge=0, le=1)
+
+
+class MatrixResponse(BaseModel):
+    matrix_id: str
+    dataset_name: str
+    dataset_version: str
+    dataset_fingerprint: str
+    experiment_ids: list[str]
+    best_experiment_id: str
+    comparisons: list[dict[str, object]]
+
+
 class ExperimentRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     scenario_ids: list[str] = Field(min_length=1, max_length=20)
