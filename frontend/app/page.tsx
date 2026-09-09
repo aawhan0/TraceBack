@@ -99,7 +99,7 @@ export default function HomePage() {
 
     <section className="grid gap-4 lg:grid-cols-2">
       <ChartCard title="Confidence over runs" description="Observed confidence for the most recent investigations."><LineChartWidget data={chartRuns} xKey="run" series={[{ key: 'confidence', color: 'hsl(var(--primary))', label: 'Confidence' }]} valueSuffix="%" height={190} /></ChartCard>
-      <ChartCard title="Investigations by scenario" description="Coverage of the configured incident scenarios."><BarChartWidget data={scenarioCounts} xKey="scenario" series={[{ key: 'runs', color: 'hsl(var(--primary))', label: 'Runs' }]} height={190} /></ChartCard>
+      <ChartCard title="Investigations by scenario" description="Coverage of the configured incident scenarios."><BarChartWidget data={scenarioCounts} xKey="scenario" series={[{ key: 'runs', color: 'hsl(var(--primary))', label: 'Runs' }]} tooltipLabelKey="fullScenario" height={190} /></ChartCard>
     </section>
 
     <ChartCard title="Investigation duration" description="Latency across the most recent runs."><AreaChartWidget data={chartRuns} xKey="run" series={[{ key: 'duration', color: 'hsl(var(--primary))', label: 'Duration' }]} valueSuffix=" ms" height={185} /></ChartCard>
@@ -107,3 +107,4 @@ export default function HomePage() {
 }
 
 function Metric({ label, value }: { label: string; value: string }) { return <div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 font-medium">{value}</p></div> }
+
