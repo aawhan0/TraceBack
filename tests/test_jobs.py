@@ -20,8 +20,8 @@ def test_job_store_rejects_invalid_limits():
         raise AssertionError("expected ValueError")
 
 
-def test_job_store_prunes_terminal_jobs_when_full():
-    store = JobStore(max_jobs=2)
+def test_job_store_prunes_terminal_jobs_when_full(tmp_path):
+    store = JobStore(max_jobs=2, database_path=str(tmp_path / "jobs.db"))
     first = store.create("database-pool-exhaustion", "baseline")
     store.update(first.job_id, status=JobStatus.RUNNING)
     store.update(first.job_id, status=JobStatus.COMPLETED)
