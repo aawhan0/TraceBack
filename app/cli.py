@@ -2,6 +2,7 @@ import argparse
 import json
 
 from app.config import Settings
+from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_dict, compare_experiments
 from app.evaluation.dataset import build_manifest
 from app.evaluation.markdown import render_experiment_markdown
 from app.evaluation.regression import RegressionPolicy
@@ -51,6 +52,9 @@ def main() -> None:
     experiments.add_argument("--limit", type=int, default=20)
     experiment = subparsers.add_parser("experiment", help="Show one persisted benchmark experiment.")
     experiment.add_argument("experiment_id")
+    compare = subparsers.add_parser("compare", help="Compare two persisted benchmark experiments.")
+    compare.add_argument("baseline_id")
+    compare.add_argument("candidate_id")
 
     runs = subparsers.add_parser("runs", help="List persisted investigation runs.")
     runs.add_argument("--scenario-id")
@@ -148,6 +152,21 @@ def main() -> None:
             "provenance": record.provenance.as_dict() if record.provenance else None,
             "created_at": record.created_at,
         })
+        return
+
+    if args.command == "compare":
+        service = BenchmarkService()
+        baseline = service.get(args.baseline_id)
+        if baseline is None:
+            parser.error(f"Baseline experiment not found: {args.baseline_id}")
+        candidate = service.get(args.candidate_id)
+        if candidate is None:
+            parser.error(f"Candidate experiment not found: {args.candidate_id}")
+        try:
+            comparison = compare_experiments(baseline, candidate)
+        except IncompatibleBenchmarkError as exc:
+            parser.error(str(exc))
+        _json(comparison_to_dict(comparison))
         return
 
     if args.command == "runs":
