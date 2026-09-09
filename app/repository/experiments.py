@@ -39,12 +39,15 @@ class SQLiteExperimentStore:
 
     def __init__(self, database_path: str = "data/traceback.db") -> None:
         self.database_path = database_path
-        if database_path != ":memory:":
+        self._memory_connection: sqlite3.Connection | None = None
+        if database_path == ":memory:":
+            self._memory_connection = sqlite3.connect(":memory:")
+        else:
             Path(database_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database_path)
+        connection = self._memory_connection or sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
         return connection
 
