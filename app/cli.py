@@ -5,9 +5,9 @@ from app.config import Settings
 from app.evaluation.dataset import build_manifest
 from app.evaluation.markdown import render_experiment_markdown
 from app.evaluation.regression import RegressionPolicy
-from app.services.benchmark import BenchmarkRequest, BenchmarkService
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
+from app.services.benchmark import BenchmarkRequest, BenchmarkService
 from app.scenarios.catalog import SCENARIOS, get_scenario
 from app.services.investigation import InvestigationService
 
