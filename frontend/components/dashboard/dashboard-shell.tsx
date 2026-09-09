@@ -12,7 +12,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8">{children}</div>
+          <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8">{children}</div>
         </main>
       </div>
     </div>
