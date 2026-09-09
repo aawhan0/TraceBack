@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from app.agent.baseline import BaselineInvestigator
 from app.agent.llm import LLMInvestigator
+from app.config import Settings
 from app.evaluation.dataset import DatasetManifest
 from app.evaluation.experiments import ExperimentResult, ExperimentRunner, ExperimentSpec
 from app.evaluation.provenance import BenchmarkProvenance
@@ -15,7 +16,6 @@ from app.evaluation.regression import (
     evaluate_regression,
     metrics_from_experiment,
 )
-from app.config import Settings
 from app.models.domain import IncidentScenario
 from app.observability.events import TraceContext, TraceSpan
 from app.providers.ollama import OllamaProvider
