@@ -8,6 +8,7 @@ from app.api.middleware import RequestContextMiddleware
 from app.api.security import RateLimiter
 from app.api.security_middleware import SecurityMiddleware
 from app.api.health_routes import router as health_router
+from app.api.operations import router as operations_router
 from app.api.routes import router
 from app.config import Settings
 
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application.include_router(router)
     application.include_router(health_router)
+    application.include_router(operations_router)
     return application
 
 
