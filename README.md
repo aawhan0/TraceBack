@@ -445,3 +445,15 @@ traceback benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smo
 ```
 
 This keeps model comparisons on the same scenario dataset, evaluator, regression policy, and persistence path instead of creating a separate evaluation implementation for LLM runs.
+
+
+### Benchmark comparison
+
+Persisted benchmark experiments can now be compared directly. Traceback validates dataset compatibility before calculating deltas, then reports overall and per-scenario quality changes together with provider/model identity.
+
+```bash
+traceback compare <baseline-experiment-id> <candidate-experiment-id>
+traceback compare <baseline-experiment-id> <candidate-experiment-id> --report
+```
+
+This makes model evaluation a closed loop: **run → persist provenance → compare → identify regressions/improvements**.
