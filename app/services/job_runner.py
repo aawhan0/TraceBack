@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.config import Settings
+from app.observability.events import TraceContext, TraceSpan
 from app.providers.ollama import OllamaProvider
 from app.scenarios.catalog import get_scenario
 from app.services.investigation import InvestigationService
@@ -20,6 +21,12 @@ class InvestigationJobRunner:
         if job is None:
             raise KeyError(job_id)
 
+        context = TraceContext.create()
+        self.store.update(job_id, trace_id=context.trace_id)
+        with TraceSpan(context, "job", job_id=job_id, scenario_id=job.scenario_id):
+            self._run_with_retries(job_id, job)
+
+    def _run_with_retries(self, job_id: str, job) -> None:
         while job.attempts < job.max_attempts:
             job = self.store.update(
                 job_id,

@@ -8,7 +8,11 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.observability.audit import AuditEvent, AuditLog
+from app.observability.metrics import MetricsRegistry
 from app.services.request_validation import validate_request_id
+
+
+METRICS = MetricsRegistry()
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -44,9 +48,14 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     },
                 )
             )
+            METRICS.increment("http.requests.total")
+            METRICS.observe("http.request.duration_seconds", elapsed / 1000)
             raise
 
         elapsed = (perf_counter() - started) * 1000
+        METRICS.increment("http.requests.total")
+        METRICS.observe("http.request.duration_seconds", elapsed / 1000)
+        METRICS.increment(f"http.responses.{response.status_code}")
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Response-Time-Ms"] = f"{elapsed:.3f}"
         return response

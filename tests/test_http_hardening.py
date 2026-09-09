@@ -54,3 +54,15 @@ def test_invalid_request_id_is_replaced() -> None:
     assert response.status_code == 200
     assert response.headers["X-Request-ID"]
     assert response.headers["X-Request-ID"] != "\x00bad"
+
+
+def test_metrics_endpoint_exposes_request_metrics():
+    from app.api.middleware import METRICS
+    METRICS.reset()
+    response = client.get("/health")
+    assert response.status_code == 200
+    metrics = client.get("/health/metrics")
+    assert metrics.status_code == 200
+    assert "http_requests_total 1" in metrics.text
+    assert "http_responses_200 1" in metrics.text
+    assert "http_request_duration_seconds_count 1" in metrics.text
