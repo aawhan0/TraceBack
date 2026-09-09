@@ -3,6 +3,7 @@ import json
 
 from app.config import Settings
 from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_dict, compare_experiments
+from app.evaluation.markdown import render_benchmark_comparison_markdown
 from app.evaluation.dataset import build_manifest
 from app.evaluation.markdown import render_experiment_markdown
 from app.evaluation.regression import RegressionPolicy
@@ -55,6 +56,7 @@ def main() -> None:
     compare = subparsers.add_parser("compare", help="Compare two persisted benchmark experiments.")
     compare.add_argument("baseline_id")
     compare.add_argument("candidate_id")
+    compare.add_argument("--report", action="store_true", help="Render a Markdown comparison report.")
 
     runs = subparsers.add_parser("runs", help="List persisted investigation runs.")
     runs.add_argument("--scenario-id")
@@ -166,7 +168,10 @@ def main() -> None:
             comparison = compare_experiments(baseline, candidate)
         except IncompatibleBenchmarkError as exc:
             parser.error(str(exc))
-        _json(comparison_to_dict(comparison))
+        if args.report:
+            print(render_benchmark_comparison_markdown(comparison), end="")
+        else:
+            _json(comparison_to_dict(comparison))
         return
 
     if args.command == "runs":
