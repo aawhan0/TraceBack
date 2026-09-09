@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { ArrowLeft, Check, ChevronRight, CircleAlert, FlaskConical, History, LoaderCircle, Play, Search, Settings2, X } from 'lucide-react'
 
 type Scenario = { id: string; title: string }
@@ -82,7 +83,7 @@ function App() {
   )
 }
 
-function NavItem({ icon, label, active, onClick }: { icon: JSX.Element; label: string; active: boolean; onClick: () => void }) {
+function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
   return <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>{icon}<span>{label}</span></button>
 }
 
@@ -92,10 +93,10 @@ function InvestigateView({ scenarios, scenario, setScenario, mode, setMode, mode
     <div className="form-panel">
       <div className="field"><label>Incident</label><select value={scenario} onChange={(e) => setScenario(e.target.value)}>{scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></div>
       <div className="split">
-        <div className="field"><label>Mode</label><div className="toggle"><button className={mode === 'baseline' ? 'selected' : ''} onClick={() => setMode('baseline')}>Baseline</button><button className={mode === 'llm' ? 'selected' : ''} onClick={() => setMode('llm')}>LLM</button></div></div>
+        <div className="field"><label>Mode</label><div className="toggle"><button type="button" className={mode === 'baseline' ? 'selected' : ''} onClick={() => setMode('baseline')}>Baseline</button><button type="button" className={mode === 'llm' ? 'selected' : ''} onClick={() => setMode('llm')}>LLM</button></div></div>
         <div className="field"><label>Model <span>LLM only</span></label><input disabled={mode !== 'llm'} value={model} onChange={(e) => setModel(e.target.value)} placeholder="llama3.2" /></div>
       </div>
-      <div className="form-action"><span>{scenario || 'Select an incident'}</span><button className="primary" disabled={!scenario || busy} onClick={onRun}>{busy ? <><LoaderCircle size={15} className="spin" /> Running</> : <><Play size={15} /> Run investigation</>}</button></div>
+      <div className="form-action"><span>{scenario || 'Select an incident'}</span><button type="button" className="primary" disabled={!scenario || busy} onClick={onRun}>{busy ? <><LoaderCircle size={15} className="spin" /> Running</> : <><Play size={15} /> Run investigation</>}</button></div>
     </div>
     {!result && <div className="empty-inline">Results will appear here after the investigation finishes.</div>}
     {result && <InvestigationResult result={result} scenario={activeScenario || result.scenario_id} />}
@@ -122,7 +123,7 @@ function HistoryView({ runs }: { runs: Run[] }) {
 }
 
 function Info({ label, value }: { label: string; value: string }) { return <div className="info"><span>{label}</span><strong>{value}</strong></div> }
-function Empty({ icon, text }: { icon: JSX.Element; text: string }) { return <div className="empty"><div>{icon}</div><strong>{text}</strong></div> }
+function Empty({ icon, text }: { icon: ReactNode; text: string }) { return <div className="empty"><div>{icon}</div><strong>{text}</strong></div> }
 function relative(date: string) { const diff = Date.now() - new Date(date).getTime(); if (!Number.isFinite(diff)) return date; const minutes = Math.floor(diff / 60000); if (minutes < 1) return 'just now'; if (minutes < 60) return `${minutes}m ago`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours}h ago`; return `${Math.floor(hours / 24)}d ago` }
 
 export default App
