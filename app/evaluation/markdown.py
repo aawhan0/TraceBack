@@ -67,3 +67,34 @@ def render_comparison_markdown(
         f"{candidate.average_duration_ms - baseline.average_duration_ms:+.2f} ms |",
     ]
     return "\n".join(lines) + "\n"
+
+
+def render_benchmark_comparison_markdown(comparison) -> str:
+    """Render a persisted benchmark comparison for humans and CI artifacts."""
+    lines = [
+        "# Benchmark comparison",
+        "",
+        f"**Verdict:** {comparison.verdict.upper()}",
+        "",
+        f"- Baseline: {comparison.baseline_experiment_id}",
+        f"- Candidate: {comparison.candidate_experiment_id}",
+        f"- Dataset: {comparison.dataset_name}@{comparison.dataset_version}",
+        f"- Fingerprint: `{comparison.dataset_fingerprint}`",
+        "",
+        "| Metric | Baseline | Candidate | Delta |",
+        "| --- | ---: | ---: | ---: |",
+        f"| Pass rate | {comparison.baseline_pass_rate:.2%} | {comparison.candidate_pass_rate:.2%} | {comparison.pass_rate_delta:+.2%} |",
+        f"| Confidence | {comparison.baseline_confidence:.3f} | {comparison.candidate_confidence:.3f} | {comparison.confidence_delta:+.3f} |",
+        f"| Duration | {comparison.baseline_duration_ms:.2f} ms | {comparison.candidate_duration_ms:.2f} ms | {comparison.duration_delta_ms:+.2f} ms |",
+        "",
+        "## Scenario deltas",
+        "",
+        "| Scenario | Baseline | Candidate | Delta |",
+        "| --- | ---: | ---: | ---: |",
+    ]
+    lines.extend(
+        f"| {item.scenario_id} | {item.baseline_pass_rate:.2%} | "
+        f"{item.candidate_pass_rate:.2%} | {item.pass_rate_delta:+.2%} |"
+        for item in comparison.scenario_comparisons
+    )
+    return "\n".join(lines) + "\n"
