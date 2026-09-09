@@ -54,4 +54,3 @@ def test_invalid_request_id_is_replaced() -> None:
     assert response.status_code == 200
     assert response.headers["X-Request-ID"]
     assert response.headers["X-Request-ID"] != "\x00bad"
-
