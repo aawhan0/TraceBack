@@ -2,7 +2,11 @@ import argparse
 import json
 
 from app.config import Settings
+from app.evaluation.dataset import build_manifest
 from app.evaluation.experiments import ExperimentRunner, ExperimentSpec
+from app.evaluation.markdown import render_experiment_markdown
+from app.evaluation.regression import RegressionPolicy
+from app.services.benchmark import BenchmarkRequest, BenchmarkService
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS, get_scenario
@@ -31,6 +35,13 @@ def main() -> None:
     benchmark.add_argument("--scenario-id", action="append", dest="scenario_ids")
     benchmark.add_argument("--repetitions", type=int, default=1)
     benchmark.add_argument("--name", default="cli-benchmark")
+    benchmark.add_argument("--min-pass-rate", type=float, default=1.0)
+    benchmark.add_argument("--report", action="store_true", help="Render a Markdown benchmark report.")
+
+    experiments = subparsers.add_parser("experiments", help="List persisted benchmark experiments.")
+    experiments.add_argument("--limit", type=int, default=20)
+    experiment = subparsers.add_parser("experiment", help="Show one persisted benchmark experiment.")
+    experiment.add_argument("experiment_id")
 
     runs = subparsers.add_parser("runs", help="List persisted investigation runs.")
     runs.add_argument("--scenario-id")
@@ -51,16 +62,73 @@ def main() -> None:
         return
 
     if args.command == "benchmark":
-        scenario_ids = tuple(args.scenario_ids or [scenario.id for scenario in SCENARIOS])
+        catalog = {scenario.id: scenario for scenario in SCENARIOS}
+        scenario_ids = tuple(args.scenario_ids or catalog)
         try:
-            spec = ExperimentSpec(args.name, scenario_ids, args.repetitions)
-            result = ExperimentRunner(InvestigationService()).run(
-                spec,
-                {scenario.id: scenario for scenario in SCENARIOS},
+            selected = [catalog[scenario_id] for scenario_id in scenario_ids]
+            dataset = build_manifest(args.name, "cli", selected)
+            result = BenchmarkService().run(
+                BenchmarkRequest(
+                    args.name,
+                    dataset,
+                    args.repetitions,
+                    RegressionPolicy(minimum_pass_rate=args.min_pass_rate),
+                ),
+                catalog,
             )
         except (KeyError, ValueError, RuntimeError) as exc:
             parser.error(str(exc))
-        _json(result.__dict__)
+        if args.report:
+            print(render_experiment_markdown(result.result, result.regression))
+        else:
+            _json({
+                "experiment_id": result.experiment_id,
+                **result.result.__dict__,
+                "regression_passed": result.regression.passed,
+                "regression_failures": [failure.__dict__ for failure in result.regression.failures],
+                "dataset_fingerprint": result.dataset_fingerprint,
+            })
+        return
+
+    if args.command == "experiments":
+        try:
+            records = BenchmarkService().list(args.limit)
+        except ValueError as exc:
+            parser.error(str(exc))
+        _json([
+            {
+                "experiment_id": record.experiment_id,
+                "name": record.name,
+                "dataset": f"{record.dataset_name}@{record.dataset_version}",
+                "pass_rate": record.result.pass_rate,
+                "regression_passed": record.regression.passed if record.regression else None,
+                "created_at": record.created_at,
+            }
+            for record in records
+        ])
+        return
+
+    if args.command == "experiment":
+        record = BenchmarkService().get(args.experiment_id)
+        if record is None:
+            parser.error(f"Experiment not found: {args.experiment_id}")
+        _json({
+            "experiment_id": record.experiment_id,
+            "name": record.name,
+            "dataset_name": record.dataset_name,
+            "dataset_version": record.dataset_version,
+            "dataset_fingerprint": record.dataset_fingerprint,
+            "result": record.result.__dict__,
+            "regression": (
+                {
+                    "passed": record.regression.passed,
+                    "failures": [failure.__dict__ for failure in record.regression.failures],
+                }
+                if record.regression
+                else None
+            ),
+            "created_at": record.created_at,
+        })
         return
 
     if args.command == "runs":
