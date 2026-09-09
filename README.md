@@ -410,3 +410,24 @@ See [SECURITY.md](SECURITY.md) for the project's security policy.
 AI engineering, backend systems, full-stack development, and practical ML infrastructure.
 
 - GitHub: [aawhan0](https://github.com/aawhan0)
+
+
+## Benchmark platform
+
+Traceback now includes a reproducible benchmark layer on top of investigations.
+
+- Versioned dataset manifests with deterministic fingerprints
+- Repeatable scenario execution
+- Wilson pass-rate intervals and descriptive latency statistics
+- Confidence calibration metrics
+- Explicit regression policies
+- Persisted experiment records
+- Structured trace events and JSON logging
+- Markdown benchmark reports
+- CLI and HTTP interfaces for experiment execution and history
+
+Typical workflow:
+
+    traceback benchmark --repetitions 3 --min-pass-rate 1.0 --report
+
+See [docs/benchmarking.md](docs/benchmarking.md) for the benchmark contract and [docs/observability.md](docs/observability.md) for tracing and structured logging.
