@@ -81,7 +81,14 @@ def main() -> None:
         scenario_ids = tuple(args.scenario_ids or catalog)
         try:
             selected = [catalog[scenario_id] for scenario_id in scenario_ids]
-            dataset = build_manifest(args.name, "cli", selected)
+            # Keep dataset identity independent from the experiment name. This is
+            # what makes separately named baseline/candidate runs comparable.
+            dataset = build_manifest(
+                "core-scenarios",
+                "1",
+                selected,
+                description="Version-controlled Traceback incident scenarios.",
+            )
             result = BenchmarkService().run(
                 BenchmarkRequest(
                     args.name,
