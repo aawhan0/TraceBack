@@ -148,3 +148,41 @@ def test_experiment_comparison_endpoint_returns_deltas(tmp_path, monkeypatch) ->
 def test_experiment_comparison_endpoint_rejects_missing_experiment() -> None:
     response = client.get("/experiments/missing/compare/also-missing")
     assert response.status_code == 404
+
+
+def test_experiment_matrix_endpoint_runs_shared_dataset(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "matrix.db"))
+    response = client.post(
+        "/experiments/matrix",
+        json={
+            "matrix_id": "api-matrix",
+            "scenario_ids": ["database-pool-exhaustion"],
+            "configurations": [
+                {"name": "baseline", "mode": "baseline"},
+                {"name": "candidate", "mode": "baseline"},
+            ],
+            "repetitions": 1,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["matrix_id"] == "api-matrix"
+    assert len(payload["experiment_ids"]) == 2
+    assert payload["best_experiment_id"] in payload["experiment_ids"]
+    assert len(payload["comparisons"]) == 1
+    assert payload["dataset_name"] == "core-scenarios"
+
+
+def test_experiment_matrix_rejects_duplicate_configuration_names() -> None:
+    response = client.post(
+        "/experiments/matrix",
+        json={
+            "matrix_id": "invalid",
+            "scenario_ids": ["database-pool-exhaustion"],
+            "configurations": [
+                {"name": "same"},
+                {"name": "same"},
+            ],
+        },
+    )
+    assert response.status_code == 400
