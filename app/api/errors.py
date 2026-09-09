@@ -11,15 +11,16 @@ class ApiError:
     message: str
     request_id: str | None = None
     details: dict[str, Any] | None = None
-    occurred_at: datetime = datetime.now(timezone.utc)
+    occurred_at: datetime | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        occurred_at = self.occurred_at or datetime.now(timezone.utc)
         return {
             "code": self.code,
             "message": self.message,
             "request_id": self.request_id,
             "details": self.details or {},
-            "occurred_at": self.occurred_at.isoformat(),
+            "occurred_at": occurred_at.isoformat(),
         }
 
 
@@ -29,9 +30,14 @@ class TracebackApiError(RuntimeError):
         code: str,
         message: str,
         *,
+        status_code: int = 400,
         details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
+        self.status_code = status_code
         self.details = details or {}
+
+
+ErrorResponse = ApiError
