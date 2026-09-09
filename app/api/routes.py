@@ -10,11 +10,11 @@ from app.api.schemas import (
 )
 from app.config import Settings
 from app.evaluation.dataset import build_manifest
-from app.services.benchmark import BenchmarkRequest, BenchmarkService, default_dataset
 from app.models.domain import HealthResponse, InvestigationRun, RunStats, RunSummary
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS, get_scenario
+from app.services.benchmark import BenchmarkRequest, BenchmarkService, default_dataset
 from app.services.investigation import InvestigationService
 
 router = APIRouter()
