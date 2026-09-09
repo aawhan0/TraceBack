@@ -1,5 +1,6 @@
 from app.services.jobs import JobStatus, JobStore
 
+
 def test_job_store_lifecycle_fields_are_preserved():
     store = JobStore(max_jobs=4)
     job = store.create("database-pool-exhaustion", "baseline")
@@ -7,6 +8,7 @@ def test_job_store_lifecycle_fields_are_preserved():
     assert updated.status == JobStatus.RUNNING
     assert updated.execution_id == "exec-1"
     assert store.get(job.job_id) == updated
+
 
 def test_job_store_rejects_invalid_limits():
     store = JobStore()
@@ -17,9 +19,11 @@ def test_job_store_rejects_invalid_limits():
     else:
         raise AssertionError("expected ValueError")
 
-def test_job_store_prunes_terminal_jobs_when_full():
-    store = JobStore(max_jobs=2)
+
+def test_job_store_prunes_terminal_jobs_when_full(tmp_path):
+    store = JobStore(max_jobs=2, database_path=str(tmp_path / "jobs.db"))
     first = store.create("database-pool-exhaustion", "baseline")
+    store.update(first.job_id, status=JobStatus.RUNNING)
     store.update(first.job_id, status=JobStatus.COMPLETED)
     store.create("redis-connectivity-failure", "baseline")
     third = store.create("runaway-worker-cpu", "baseline")
