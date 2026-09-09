@@ -77,3 +77,44 @@ def test_experiment_endpoint_rejects_unknown_scenario() -> None:
         json={"name": "invalid", "scenario_ids": ["missing"], "repetitions": 1},
     )
     assert response.status_code == 404
+
+
+def test_experiment_history_and_detail_are_persisted(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "benchmark.db"))
+    response = client.post(
+        "/experiments",
+        json={
+            "name": "history-smoke",
+            "scenario_ids": ["database-pool-exhaustion"],
+            "repetitions": 2,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["experiment_id"]
+    assert payload["regression_passed"] is True
+    assert payload["pass_rate_interval_lower"] < 1.0
+
+    history = client.get("/experiments")
+    assert history.status_code == 200
+    assert history.json()[0]["experiment_id"] == payload["experiment_id"]
+
+    detail = client.get(f"/experiments/{payload['experiment_id']}")
+    assert detail.status_code == 200
+    assert detail.json()["dataset_fingerprint"] == payload["dataset_fingerprint"]
+
+
+def test_missing_experiment_returns_404(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "missing.db"))
+    response = client.get("/experiments/missing")
+    assert response.status_code == 404
+
+
+def test_core_dataset_endpoint_is_versioned() -> None:
+    response = client.get("/datasets/core")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["name"] == "core-scenarios"
+    assert payload["version"] == "1"
+    assert payload["case_count"] == 3
+    assert len(payload["fingerprint"]) == 64
