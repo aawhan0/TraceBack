@@ -57,3 +57,10 @@ def test_idempotency_rejects_invalid_limits() -> None:
         IdempotencyStore[str](ttl_seconds=0)
     with pytest.raises(ValueError):
         IdempotencyStore[str](max_entries=0)
+
+def test_settings_validate_rate_limit_configuration() -> None:
+    with pytest.raises(ValueError, match="RATE_LIMIT_REQUESTS"):
+        Settings(rate_limit_requests=0).validate()
+    with pytest.raises(ValueError, match="RATE_LIMIT_WINDOW_SECONDS"):
+        Settings(rate_limit_window_seconds=0).validate()
+
