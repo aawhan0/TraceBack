@@ -27,3 +27,7 @@ def compare_evaluations(
             candidate.root_cause_accuracy - baseline.root_cause_accuracy
         ),
     )
+
+
+# Backwards-compatible exports for callers using the comparison module directly.
+from app.evaluation.comparison import IncompatibleBenchmarkError
