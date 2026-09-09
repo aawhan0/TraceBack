@@ -9,6 +9,8 @@ on:
 permissions:
   contents: read
   packages: write
+  attestations: write
+  id-token: write
 
 concurrency:
   group: release-container
@@ -43,6 +45,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
 
       - name: Build and push production image
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -53,3 +56,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Generate release provenance attestation
+        uses: actions/attest@v4
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
