@@ -162,3 +162,27 @@ LLM benchmark:
 ### API
 
 POST /experiments accepts mode (baseline or llm) and an optional model. LLM mode requires a model and uses the configured Ollama endpoint. The response and persisted experiment record include a provenance object so benchmark results remain interpretable after the run has completed.
+
+
+## Comparing benchmark runs
+
+Once two compatible experiments have been persisted, Traceback can compare them without rerunning either experiment:
+
+    traceback compare <baseline-experiment-id> <candidate-experiment-id>
+    traceback compare <baseline-experiment-id> <candidate-experiment-id> --report
+
+The comparison is deliberately strict. Both experiments must use the same dataset name, version, fingerprint, and scenario set. This prevents a model from appearing to improve simply because it was evaluated against an easier or different dataset.
+
+The comparison reports:
+
+- overall pass-rate delta
+- average confidence delta
+- average duration delta
+- per-scenario pass-rate deltas
+- baseline/candidate provider identity
+- baseline/candidate model identity
+- an improved, regressed, or unchanged verdict
+
+The same comparison is available through GET /experiments/{baseline_id}/compare/{candidate_id}.
+
+A dataset mismatch returns HTTP 409 rather than producing a misleading comparison.
