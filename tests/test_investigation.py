@@ -3,6 +3,7 @@ import pytest
 from app.agent.baseline import BaselineInvestigator
 from app.evaluation.aggregate import aggregate_evaluations
 from app.evaluation.evaluator import evaluate_diagnosis
+from app.observability.events import InMemoryEventSink, TraceContext
 from app.scenarios.catalog import SCENARIOS
 from app.services.investigation import InvestigationService
 
@@ -18,9 +19,26 @@ def test_baseline_investigator_returns_structured_diagnosis() -> None:
 
 
 def test_investigation_service_is_end_to_end() -> None:
-    result = InvestigationService().investigate(SCENARIOS[1])
-    assert result.scenario_id == SCENARIOS[1].id
+    scenario = SCENARIOS[1]
+    sink = InMemoryEventSink()
+    result = InvestigationService().investigate(
+        scenario,
+        trace=TraceContext.create(sink),
+    )
+    assert result.scenario_id == scenario.id
     assert result.evaluation.passed
+    assert result.execution_id
+    assert result.trace_id
+    assert result.duration_ms >= 0
+    assert sink.events()
+
+
+def test_investigation_service_persists_runtime_identity() -> None:
+    scenario = SCENARIOS[0]
+    result = InvestigationService().investigate(scenario)
+    assert result.run_id
+    assert result.execution_id
+    assert result.trace_id
 
 
 def test_aggregate_evaluation_summarizes_repeated_runs() -> None:
