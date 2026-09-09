@@ -47,3 +47,18 @@ def test_comparison_markdown_shows_deltas() -> None:
     report = render_comparison_markdown(result("base", 0.8), result("candidate", 1.0))
     assert "# Experiment comparison" in report
     assert "+20.00%" in report
+
+
+def test_render_benchmark_comparison_markdown_includes_scenario_deltas() -> None:
+    from app.evaluation.compare import compare_experiments
+    from app.evaluation.markdown import render_benchmark_comparison_markdown
+    from tests.test_comparison import make_record
+
+    comparison = compare_experiments(
+        make_record("base", pass_rate=0.5),
+        make_record("candidate", pass_rate=1.0),
+    )
+    report = render_benchmark_comparison_markdown(comparison)
+    assert "**Verdict:** IMPROVED" in report
+    assert "| Pass rate | 50.00% | 100.00% | +50.00% |" in report
+    assert "database-pool-exhaustion" in report
