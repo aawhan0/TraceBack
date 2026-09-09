@@ -1,18 +1,16 @@
 # Deployment
 
-TraceBack is now packaged as a small production-oriented container.
+TraceBack is packaged as a small production-oriented container.
 
-## Build
+## Docker
 
-From the repository root:
+Build the image:
 
 ```bash
 docker build -t traceback:local .
 ```
 
-## Run
-
-The container listens on port 8000:
+Run it with durable SQLite state:
 
 ```bash
 docker run --rm \
@@ -21,9 +19,42 @@ docker run --rm \
   traceback:local
 ```
 
-The SQLite volume is intentional. Investigation runs, experiments, jobs, and audit state must survive container replacement.
-
 The application runs as a non-root user and stores its default database at `/data/traceback.db`.
+
+## Docker Compose
+
+For the simplest repeatable deployment:
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+The Compose service builds the same production Dockerfile, exposes port 8000, persists SQLite through the named `traceback-data` volume, restarts after unexpected exits, and uses the image healthcheck for liveness.
+
+Stop it with:
+
+```bash
+docker compose down
+```
+
+The named volume is retained by default. To intentionally remove persisted application state:
+
+```bash
+docker compose down -v
+```
+
+### External Ollama
+
+Ollama is intentionally not bundled into the Compose file. The application can point at an existing Ollama service through `OLLAMA_BASE_URL` without tying model serving to the application container lifecycle.
+
+For example:
+
+```bash
+OLLAMA_BASE_URL=http://host.docker.internal:11434 docker compose up --build -d
+```
+
+The exact network address depends on the deployment platform; do not assume `host.docker.internal` is available everywhere.
 
 ## Configuration
 
@@ -38,8 +69,6 @@ Production configuration continues to use the existing environment variables:
 - `TRACEBACK_MODEL`
 - `OLLAMA_BASE_URL`
 - `TRACEBACK_OLLAMA_TIMEOUT`
-
-For a remote Ollama service, set `OLLAMA_BASE_URL` to the reachable provider endpoint. The container does not bundle Ollama, keeping model serving separate from the application lifecycle.
 
 ## Health
 
@@ -71,4 +100,4 @@ The repository and service boundaries keep persistence and model providers repla
 
 ## CI
 
-The repository CI builds the container on pull requests and pushes. This catches Dockerfile/package regressions without requiring a registry or publishing credentials.
+Repository CI builds the container on pull requests and pushes, and validates the Compose configuration. This catches Dockerfile, packaging, and deployment-definition regressions without requiring registry credentials.
