@@ -33,18 +33,18 @@ services:
     image: traceback-frontend:local
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       - traceback
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1",
+          "wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1",
         ]
       interval: 30s
       timeout: 5s
-      start_period: 5s
+      start_period: 10s
       retries: 3
     init: true
 
