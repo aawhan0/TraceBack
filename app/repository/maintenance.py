@@ -47,6 +47,7 @@ class SQLiteMaintenance:
                 "DELETE FROM audit_events WHERE occurred_at < ?", (cutoff,)
             ).rowcount
             if vacuum:
+                connection.commit()
                 connection.execute("VACUUM")
         return MaintenanceResult(
             deleted_runs=runs,
