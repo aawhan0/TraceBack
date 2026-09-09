@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta, timezone
-
 from app.evaluation.timeline import build_timeline, render_timeline, total_duration
 from app.observability.events import InMemoryEventSink, TraceContext, TraceSpan
 
