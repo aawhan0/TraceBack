@@ -6,6 +6,8 @@ from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_
 from app.evaluation.markdown import render_benchmark_comparison_markdown
 from app.evaluation.dataset import build_manifest
 from app.evaluation.markdown import render_experiment_markdown
+from app.evaluation.matrix import ExperimentConfiguration
+from app.services.matrix import MatrixRequest, MatrixService
 from app.evaluation.regression import RegressionPolicy
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
@@ -48,6 +50,17 @@ def main() -> None:
         action="store_true",
         help="Exit non-zero when the gate fails.",
     )
+
+    matrix = subparsers.add_parser(
+        "matrix",
+        help="Run multiple benchmark configurations against one immutable dataset.",
+    )
+    matrix.add_argument("--config", action="append", required=True,
+                        help="Configuration as name=baseline or name=llm:model. Repeat for each configuration.")
+    matrix.add_argument("--scenario-id", action="append", dest="scenario_ids")
+    matrix.add_argument("--repetitions", type=int, default=1)
+    matrix.add_argument("--name", default="cli-matrix")
+    matrix.add_argument("--min-pass-rate", type=float, default=1.0)
 
     experiments = subparsers.add_parser("experiments", help="List persisted benchmark experiments.")
     experiments.add_argument("--limit", type=int, default=20)
@@ -118,6 +131,54 @@ def main() -> None:
                 assert_regression(result)
             except RuntimeError as exc:
                 parser.error(str(exc))
+        return
+
+    if args.command == "matrix":
+        catalog = {scenario.id: scenario for scenario in SCENARIOS}
+        scenario_ids = tuple(args.scenario_ids or catalog)
+        try:
+            selected = [catalog[scenario_id] for scenario_id in scenario_ids]
+            dataset = build_manifest(
+                "core-scenarios",
+                "1",
+                selected,
+                description="Version-controlled Traceback incident scenarios.",
+            )
+            configurations = []
+            for raw in args.config:
+                if "=" not in raw:
+                    raise ValueError("matrix config must use name=baseline or name=llm:model")
+                name, spec = raw.split("=", 1)
+                if spec == "baseline":
+                    configurations.append(ExperimentConfiguration(name))
+                elif spec.startswith("llm:"):
+                    configurations.append(
+                        ExperimentConfiguration(name, mode="llm", model=spec[4:])
+                    )
+                else:
+                    raise ValueError("matrix config must use name=baseline or name=llm:model")
+            result = MatrixService().run(
+                MatrixRequest(
+                    args.name,
+                    dataset,
+                    tuple(configurations),
+                    repetitions=args.repetitions,
+                    policy=RegressionPolicy(minimum_pass_rate=args.min_pass_rate),
+                ),
+                catalog,
+            )
+        except (KeyError, ValueError, RuntimeError) as exc:
+            parser.error(str(exc))
+        _json({
+            "matrix_id": result.matrix_id,
+            "dataset": {
+                "name": result.dataset_name,
+                "version": result.dataset_version,
+                "fingerprint": result.dataset_fingerprint,
+            },
+            "experiment_ids": list(result.experiment_ids),
+            "best_experiment_id": result.best_experiment_id,
+        })
         return
 
     if args.command == "experiments":
