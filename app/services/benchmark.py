@@ -46,7 +46,6 @@ class BenchmarkRequest:
             raise ValueError("LLM benchmarks require a model")
 
     def provenance(self) -> BenchmarkProvenance:
-        settings = Settings.from_environment()
         return BenchmarkProvenance.from_environment(
             provider="baseline" if self.mode == "baseline" else "ollama",
             model=self.model,
@@ -61,7 +60,7 @@ class BenchmarkResult:
     dataset_name: str
     dataset_version: str
     dataset_fingerprint: str
-    provenance: BenchmarkProvenance
+    provenance: BenchmarkProvenance | None = None
 
 
 class BenchmarkService:
