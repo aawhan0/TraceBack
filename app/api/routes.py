@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from app.api.schemas import (
     BenchmarkProvenanceResponse,
     BenchmarkResponse,
+    MatrixResponse,
     DatasetResponse,
     ExperimentRequest,
     ExperimentSummaryResponse,
@@ -18,6 +19,8 @@ from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS, get_scenario
 from app.services.benchmark import BenchmarkRequest, BenchmarkService, default_dataset
 from app.services.investigation import InvestigationService
+from app.evaluation.matrix import ExperimentConfiguration
+from app.services.matrix import MatrixRequest, MatrixService
 
 router = APIRouter()
 
@@ -168,6 +171,52 @@ def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
         pass_rate_interval_lower=result.regression.pass_rate_interval_lower,
         pass_rate_interval_upper=result.regression.pass_rate_interval_upper,
         provenance=_provenance_response(result.provenance),
+    )
+
+
+@router.post("/experiments/matrix", response_model=MatrixResponse, tags=["experiments"])
+def run_experiment_matrix(request: MatrixRequest) -> MatrixResponse:
+    catalog = {scenario.id: scenario for scenario in SCENARIOS}
+    try:
+        dataset = build_manifest(
+            "core-scenarios",
+            "1",
+            [catalog[scenario_id] for scenario_id in request.scenario_ids],
+            description="Version-controlled Traceback incident scenarios.",
+        )
+        configurations = tuple(
+            ExperimentConfiguration(item.name, mode=item.mode, model=item.model)
+            for item in request.configurations
+        )
+        result = MatrixService().run(
+            MatrixRequest(
+                request.matrix_id,
+                dataset,
+                configurations,
+                repetitions=request.repetitions,
+                policy=__import__("app.evaluation.regression", fromlist=["RegressionPolicy"]).RegressionPolicy(
+                    minimum_pass_rate=request.min_pass_rate
+                ),
+            ),
+            catalog,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    from app.evaluation.comparison import comparison_to_dict
+
+    return MatrixResponse(
+        matrix_id=result.matrix_id,
+        dataset_name=result.dataset_name,
+        dataset_version=result.dataset_version,
+        dataset_fingerprint=result.dataset_fingerprint,
+        experiment_ids=list(result.experiment_ids),
+        best_experiment_id=result.best_experiment_id,
+        comparisons=[comparison_to_dict(item) for item in result.comparisons],
     )
 
 
