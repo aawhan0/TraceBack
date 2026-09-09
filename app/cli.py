@@ -7,7 +7,7 @@ from app.evaluation.markdown import render_experiment_markdown
 from app.evaluation.regression import RegressionPolicy
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
-from app.services.benchmark import BenchmarkRequest, BenchmarkService
+from app.services.benchmark import BenchmarkRequest, BenchmarkService, assert_regression
 from app.scenarios.catalog import SCENARIOS, get_scenario
 from app.services.investigation import InvestigationService
 
@@ -36,6 +36,7 @@ def main() -> None:
     benchmark.add_argument("--name", default="cli-benchmark")
     benchmark.add_argument("--min-pass-rate", type=float, default=1.0)
     benchmark.add_argument("--report", action="store_true", help="Render a Markdown benchmark report.")
+    benchmark.add_argument("--fail-on-regression", action="store_true", help="Exit non-zero when the gate fails.")
 
     experiments = subparsers.add_parser("experiments", help="List persisted benchmark experiments.")
     experiments.add_argument("--limit", type=int, default=20)
@@ -78,7 +79,7 @@ def main() -> None:
         except (KeyError, ValueError, RuntimeError) as exc:
             parser.error(str(exc))
         if args.report:
-            print(render_experiment_markdown(result.result, result.regression))
+            print(render_experiment_markdown(result.result, result.regression), end="")
         else:
             _json({
                 "experiment_id": result.experiment_id,
@@ -87,6 +88,11 @@ def main() -> None:
                 "regression_failures": [failure.__dict__ for failure in result.regression.failures],
                 "dataset_fingerprint": result.dataset_fingerprint,
             })
+        if args.fail_on_regression:
+            try:
+                assert_regression(result)
+            except RuntimeError as exc:
+                parser.error(str(exc))
         return
 
     if args.command == "experiments":
