@@ -10,6 +10,7 @@ from app.api.schemas import (
     InvestigationResponse,
 )
 from app.config import Settings
+from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_dict, compare_experiments
 from app.evaluation.dataset import build_manifest
 from app.models.domain import HealthResponse, InvestigationRun, RunStats, RunSummary
 from app.providers.ollama import OllamaProvider
@@ -115,10 +116,13 @@ def _provenance_response(provenance):
 def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
     catalog = {scenario.id: scenario for scenario in SCENARIOS}
     try:
+        # Experiment names identify runs; dataset identity must remain stable so
+        # compatible runs can be compared across baseline/candidate names.
         dataset = build_manifest(
-            request.name,
-            "request",
+            "core-scenarios",
+            "1",
             [catalog[scenario_id] for scenario_id in request.scenario_ids],
+            description="Version-controlled Traceback incident scenarios.",
         )
         benchmark = BenchmarkService()
         result = benchmark.run(
@@ -225,6 +229,22 @@ def get_experiment(experiment_id: str) -> BenchmarkResponse:
         pass_rate_interval_upper=regression.pass_rate_interval_upper if regression else 0.0,
         provenance=_provenance_response(record.provenance),
     )
+
+
+@router.get("/experiments/{baseline_id}/compare/{candidate_id}", tags=["experiments"])
+def compare_experiment_runs(baseline_id: str, candidate_id: str) -> dict[str, object]:
+    """Compare two persisted experiments on the same immutable dataset."""
+    service = BenchmarkService()
+    baseline = service.get(baseline_id)
+    if baseline is None:
+        raise HTTPException(status_code=404, detail="Baseline experiment not found")
+    candidate = service.get(candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate experiment not found")
+    try:
+        return comparison_to_dict(compare_experiments(baseline, candidate))
+    except IncompatibleBenchmarkError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/datasets/core", response_model=DatasetResponse, tags=["datasets"])

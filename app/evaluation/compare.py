@@ -27,3 +27,7 @@ def compare_evaluations(
             candidate.root_cause_accuracy - baseline.root_cause_accuracy
         ),
     )
+
+
+# Compatibility exports keep the original comparison module as a stable import surface.
+from app.evaluation.comparison import IncompatibleBenchmarkError, compare_experiments

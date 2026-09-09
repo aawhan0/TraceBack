@@ -2,6 +2,8 @@ import argparse
 import json
 
 from app.config import Settings
+from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_dict, compare_experiments
+from app.evaluation.markdown import render_benchmark_comparison_markdown
 from app.evaluation.dataset import build_manifest
 from app.evaluation.markdown import render_experiment_markdown
 from app.evaluation.regression import RegressionPolicy
@@ -51,6 +53,10 @@ def main() -> None:
     experiments.add_argument("--limit", type=int, default=20)
     experiment = subparsers.add_parser("experiment", help="Show one persisted benchmark experiment.")
     experiment.add_argument("experiment_id")
+    compare = subparsers.add_parser("compare", help="Compare two persisted benchmark experiments.")
+    compare.add_argument("baseline_id")
+    compare.add_argument("candidate_id")
+    compare.add_argument("--report", action="store_true", help="Render a Markdown comparison report.")
 
     runs = subparsers.add_parser("runs", help="List persisted investigation runs.")
     runs.add_argument("--scenario-id")
@@ -75,7 +81,14 @@ def main() -> None:
         scenario_ids = tuple(args.scenario_ids or catalog)
         try:
             selected = [catalog[scenario_id] for scenario_id in scenario_ids]
-            dataset = build_manifest(args.name, "cli", selected)
+            # Keep dataset identity independent from the experiment name. This is
+            # what makes separately named baseline/candidate runs comparable.
+            dataset = build_manifest(
+                "core-scenarios",
+                "1",
+                selected,
+                description="Version-controlled Traceback incident scenarios.",
+            )
             result = BenchmarkService().run(
                 BenchmarkRequest(
                     args.name,
@@ -148,6 +161,24 @@ def main() -> None:
             "provenance": record.provenance.as_dict() if record.provenance else None,
             "created_at": record.created_at,
         })
+        return
+
+    if args.command == "compare":
+        service = BenchmarkService()
+        baseline = service.get(args.baseline_id)
+        if baseline is None:
+            parser.error(f"Baseline experiment not found: {args.baseline_id}")
+        candidate = service.get(args.candidate_id)
+        if candidate is None:
+            parser.error(f"Candidate experiment not found: {args.candidate_id}")
+        try:
+            comparison = compare_experiments(baseline, candidate)
+        except IncompatibleBenchmarkError as exc:
+            parser.error(str(exc))
+        if args.report:
+            print(render_benchmark_comparison_markdown(comparison), end="")
+        else:
+            _json(comparison_to_dict(comparison))
         return
 
     if args.command == "runs":

@@ -104,3 +104,29 @@ def test_cli_experiment_reports_missing_id(tmp_path, monkeypatch) -> None:
         assert exc.code == 2
     else:
         raise AssertionError("expected parser error")
+
+
+def test_compare_command_outputs_structured_delta(tmp_path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "cli-compare.db"))
+    from app.cli import main
+    import sys
+
+    # Seed two compatible experiments through the CLI benchmark path.
+    for name in ("cli-base", "cli-candidate"):
+        monkeypatch.setattr(sys, "argv", ["traceback", "benchmark", "--name", name])
+        main()
+
+    # Read the persisted IDs from the store so the command mirrors real usage.
+    from app.services.benchmark import BenchmarkService
+    records = BenchmarkService().list()
+    ids = {record.name: record.experiment_id for record in records}
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["traceback", "compare", ids["cli-base"], ids["cli-candidate"]],
+    )
+    main()
+    output = capsys.readouterr().out
+    assert '"verdict": "unchanged"' in output
+    assert '"pass_rate"' in output
