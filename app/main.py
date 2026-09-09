@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.errors import ErrorResponse, TracebackApiError
 from app.api.middleware import RequestContextMiddleware
+from app.api.health_routes import router as health_router
 from app.api.routes import router
 from app.config import Settings
 
@@ -53,6 +54,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     application.include_router(router)
+    application.include_router(health_router)
     return application
 
 
