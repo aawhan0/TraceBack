@@ -12,7 +12,7 @@ router = APIRouter(prefix="/ops", tags=["operations"])
 @router.get("/ready")
 def readiness() -> dict[str, object]:
     settings = Settings.from_environment()
-    report = ReadinessChecker({"database": sqlite_check(settings.database_path)}).check()
+    report = ReadinessChecker({"database": lambda: sqlite_check(settings.database_path)}).check()
     if not report.ready:
         raise HTTPException(
             status_code=503,
