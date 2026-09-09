@@ -36,9 +36,9 @@ This makes model behavior measurable rather than purely subjective.
 - **Local-first inference** using Ollama
 - **Provider-agnostic LLM boundary** so inference can be replaced without redesigning the system
 - **FastAPI backend** for exposing the system as a real service
+- **Next.js dashboard** for interactive investigation, experiments, and run history
 - **Pytest coverage** for agent, tool, model, evaluation, and reporting behavior
 - **GitHub Actions CI** for automated verification
-- **Backend-driven web dashboard** at `/ui`
 
 ## Architecture
 
@@ -95,6 +95,8 @@ The scenarios are intentionally limited. More scenarios should be added only whe
 | --- | --- |
 | Language | Python 3.12+ |
 | API | FastAPI |
+| Frontend | Next.js 15, React 19, TypeScript |
+| Charts / UI | Recharts, Tailwind CSS, shadcn-style primitives |
 | Agent/tool protocol | MCP |
 | LLM inference | Ollama |
 | Data validation | Pydantic |
@@ -105,9 +107,9 @@ The scenarios are intentionally limited. More scenarios should be added only whe
 
 ## Run Locally
 
-Traceback uses Python 3.12+.
+Traceback uses Python 3.12+ for the backend and Node.js 22 for the Next.js frontend container.
 
-### 1. Create the environment
+### 1. Create the Python environment
 
 ```powershell
 py -3.12 -m venv .venv
@@ -116,27 +118,47 @@ python -m pip install --upgrade pip
 pip install -e ".[dev]"
 ```
 
-### 2. Run the test suite
+### 2. Run the backend test suite
 
 ```powershell
 python -m pytest
 ```
 
-The local verification suite currently covers the API, dashboard, investigation flow, evaluation, persistence, jobs, security hardening, Docker definitions, and related behavior.
+The verification suite covers the API, investigation flow, evaluation, persistence, jobs, security hardening, Docker definitions, and related behavior.
 
-### 3. Start the API
+### 3. Run the full stack with Docker Compose
 
 ```powershell
-uvicorn app.main:app --reload
+docker compose up --build -d
 ```
 
-Then open:
+Open the dashboard at:
 
-- Dashboard: `http://127.0.0.1:8000/ui`
+- Dashboard: `http://127.0.0.1:3000`
 - API docs: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/health`
 
-### 4. Run a baseline investigation
+The Next.js frontend proxies `/api/*` requests to the FastAPI service, keeping browser requests same-origin while the application remains split into frontend and backend containers.
+
+Stop Compose:
+
+```powershell
+docker compose down
+```
+
+### 4. Run the frontend outside Docker
+
+```powershell
+cd frontend
+npm install
+npm run typecheck
+npm run build
+npm run dev
+```
+
+Then open `http://127.0.0.1:3000`.
+
+### 5. Run a baseline investigation
 
 ```powershell
 traceback investigate database-pool-exhaustion
@@ -144,18 +166,7 @@ traceback investigate database-pool-exhaustion
 
 Baseline investigation does not require an LLM runtime.
 
-### 5. Use the web dashboard
-
-The `/ui` dashboard is backed by the real API and supports:
-
-- single incident investigations
-- repeatable benchmarks
-- multi-configuration experiment matrices
-- persisted experiment history
-- experiment comparison
-- recent job and investigation-run views
-
-No UI action is mocked; it calls the existing backend contracts.
+The dashboard's investigation, experiments, and history views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
 
 ## LLM development
 
@@ -278,31 +289,19 @@ The current deployment boundary is intentionally single-node and local-first. SQ
 
 ## Docker
 
-Build the production image:
+Build the backend production image:
 
 ```powershell
 docker build -t traceback:local .
 ```
 
-Run it:
-
-```powershell
-docker run --rm -p 8000:8000 -v traceback-data:/data traceback:local
-```
-
-Or use Compose:
+Or use the complete stack:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Compose exposes port `8000`, persists SQLite state through the `traceback-data` named volume, and uses the application's health endpoint for the container healthcheck.
-
-Stop Compose:
-
-```powershell
-docker compose down
-```
+Compose exposes the backend on `8000` and the frontend on `3000`, persists SQLite state through the `traceback-data` named volume, and uses application health endpoints for container healthchecks.
 
 See [docs/deployment.md](docs/deployment.md) for the deployment contract and configuration details.
 
@@ -330,7 +329,7 @@ Traceback/
 ├── .github/workflows/     # CI, security, dependency and release workflows
 ├── app/
 │   ├── agent/             # investigators, LLM/provider boundary, runtime
-│   ├── api/               # FastAPI routes and web dashboard
+│   ├── api/               # FastAPI routes and web/API integration
 │   ├── evaluation/        # metrics, regression, comparison, benchmarking
 │   ├── mcp/               # MCP evidence server
 │   ├── models/            # domain contracts
@@ -339,11 +338,12 @@ Traceback/
 │   ├── repository/        # SQLite persistence
 │   ├── scenarios/         # version-controlled incident scenarios
 │   ├── services/          # application orchestration
-│   └── tools/             # constrained investigation tools
+│   └── tools/              # constrained investigation tools
+├── frontend/              # Next.js investigation dashboard
 ├── docs/                  # architecture and operational contracts
 ├── tests/                 # automated behavior tests
-├── Dockerfile
-├── compose.yaml
+├── Dockerfile             # backend image
+├── compose.yaml           # backend + frontend stack
 ├── pyproject.toml
 └── README.md
 ```
@@ -370,7 +370,7 @@ Traceback complements rather than duplicates the rest of the portfolio:
 
 ## Status
 
-The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, and functional web UI are implemented. The current phase is local end-to-end validation and final portfolio polish.
+The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, and functional Next.js web UI are implemented. The project is now in final local validation and portfolio-polish mode.
 
 ## Author
 
