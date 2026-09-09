@@ -484,3 +484,12 @@ docker run --rm -p 8000:8000 -v traceback-data:/data traceback:local
 ```
 
 See [docs/deployment.md](docs/deployment.md) for configuration, persistence, health checks, and the current single-node deployment boundary.
+
+
+For a repeatable local deployment, use Docker Compose:
+
+```bash
+docker compose up --build -d
+```
+
+The Compose deployment uses the production image and persists SQLite state in a named volume. See [docs/deployment.md](docs/deployment.md).
