@@ -10,3 +10,7 @@ def test_dashboard_is_available():
     assert "/investigations" in response.text
     assert "/jobs?limit=10" in response.text
     assert "/runs?limit=10" in response.text
+    assert "/experiments?limit=30" in response.text
+    assert "/experiments/matrix" in response.text
+    assert "Compare selected" in response.text
+    assert "Run benchmark" in response.text
