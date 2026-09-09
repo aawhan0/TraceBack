@@ -26,5 +26,27 @@ services:
       retries: 3
     init: true
 
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: traceback-frontend:local
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - traceback
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+    init: true
+
 volumes:
   traceback-data:
