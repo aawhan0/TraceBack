@@ -496,9 +496,9 @@ The Compose deployment uses the production image and persists SQLite state in a 
 
 ## Container releases
 
-Versioned production container images are published to GitHub Container Registry from explicit semantic-version tags. The release boundary is separate from pull-request CI: CI validates changes, while a release tag publishes the immutable application image.
+Versioned production container images are published to GitHub Container Registry from explicit semantic-version tags. The release boundary is separate from pull-request CI: CI validates changes, while a release tag publishes the immutable application image. Released images also receive a GitHub artifact attestation bound to the exact image digest, providing verifiable build provenance.
 
-See [docs/release.md](docs/release.md) for the release flow and deployment contract.
+See [docs/release.md](docs/release.md) for the release flow, provenance verification, and deployment contract.
 
 
 ## Container security
