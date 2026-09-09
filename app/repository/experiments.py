@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from app.evaluation.experiments import ExperimentResult
+from app.evaluation.provenance import BenchmarkProvenance
 from app.evaluation.regression import RegressionReport
 
 
@@ -21,6 +22,7 @@ class ExperimentRecord:
     result: ExperimentResult
     regression: RegressionReport | None
     created_at: datetime
+    provenance: BenchmarkProvenance | None = None
 
 
 class ExperimentStore(Protocol):
@@ -35,7 +37,7 @@ class ExperimentStore(Protocol):
 
 
 class SQLiteExperimentStore:
-    """Durable storage for benchmark-level metadata and regression outcomes."""
+    """Durable storage for benchmark metadata, outcomes, and provenance."""
 
     def __init__(self, database_path: str = "data/traceback.db") -> None:
         self.database_path = database_path
@@ -63,10 +65,17 @@ class SQLiteExperimentStore:
                     dataset_fingerprint TEXT NOT NULL,
                     result_json TEXT NOT NULL,
                     regression_json TEXT,
+                    provenance_json TEXT,
                     created_at TEXT NOT NULL
                 )
                 """
             )
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(experiments)").fetchall()
+            }
+            if "provenance_json" not in columns:
+                connection.execute("ALTER TABLE experiments ADD COLUMN provenance_json TEXT")
             connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_experiments_created
@@ -80,8 +89,9 @@ class SQLiteExperimentStore:
                 """
                 INSERT OR REPLACE INTO experiments (
                     experiment_id, name, dataset_name, dataset_version,
-                    dataset_fingerprint, result_json, regression_json, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    dataset_fingerprint, result_json, regression_json,
+                    provenance_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.experiment_id,
@@ -92,6 +102,9 @@ class SQLiteExperimentStore:
                     json.dumps(_result_to_dict(record.result), sort_keys=True),
                     json.dumps(_regression_to_dict(record.regression), sort_keys=True)
                     if record.regression is not None
+                    else None,
+                    json.dumps(record.provenance.as_dict(), sort_keys=True)
+                    if record.provenance is not None
                     else None,
                     record.created_at.isoformat(),
                 ),
@@ -148,6 +161,14 @@ def _regression_to_dict(report: RegressionReport | None) -> dict[str, object] | 
     }
 
 
+def _provenance_from_row(row: sqlite3.Row) -> BenchmarkProvenance | None:
+    value = row["provenance_json"]
+    if not value:
+        return None
+    data = json.loads(value)
+    return BenchmarkProvenance(**data)
+
+
 def _row_to_record(row: sqlite3.Row) -> ExperimentRecord:
     result_data = json.loads(row["result_json"])
     result = ExperimentResult(
@@ -181,4 +202,5 @@ def _row_to_record(row: sqlite3.Row) -> ExperimentRecord:
         result=result,
         regression=regression,
         created_at=datetime.fromisoformat(row["created_at"]),
+        provenance=_provenance_from_row(row),
     )

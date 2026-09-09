@@ -32,6 +32,8 @@ class ExperimentRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     scenario_ids: list[str] = Field(min_length=1, max_length=20)
     repetitions: int = Field(default=1, ge=1, le=100)
+    mode: Literal["baseline", "llm"] = "baseline"
+    model: str | None = Field(default=None, min_length=1)
 
 
 class ExperimentResponse(BaseModel):
@@ -52,6 +54,15 @@ class RegressionFailureResponse(BaseModel):
     message: str
 
 
+class BenchmarkProvenanceResponse(BaseModel):
+    application_version: str
+    git_revision: str
+    python_version: str
+    environment: str
+    provider: str
+    model: str | None
+
+
 class BenchmarkResponse(BaseModel):
     experiment_id: str
     name: str
@@ -68,6 +79,7 @@ class BenchmarkResponse(BaseModel):
     regression_failures: list[RegressionFailureResponse]
     pass_rate_interval_lower: float
     pass_rate_interval_upper: float
+    provenance: BenchmarkProvenanceResponse | None = None
 
 
 class ExperimentSummaryResponse(BaseModel):
@@ -81,6 +93,7 @@ class ExperimentSummaryResponse(BaseModel):
     passed_runs: int
     pass_rate: float
     regression_passed: bool | None
+    provenance: BenchmarkProvenanceResponse | None = None
 
 
 class DatasetResponse(BaseModel):

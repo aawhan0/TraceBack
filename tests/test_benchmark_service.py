@@ -36,6 +36,10 @@ def test_benchmark_request_validates_name_and_repetitions() -> None:
         BenchmarkRequest("", dataset)
     with pytest.raises(ValueError):
         BenchmarkRequest("core", dataset, repetitions=0)
+    with pytest.raises(ValueError, match="cannot declare a model"):
+        BenchmarkRequest("core", dataset, model="llama3.2")
+    with pytest.raises(ValueError, match="require a model"):
+        BenchmarkRequest("core", dataset, mode="llm")
 
 
 def test_default_dataset_covers_catalog() -> None:
@@ -63,6 +67,8 @@ def test_benchmark_service_persists_result(tmp_path) -> None:
     assert result.result.pass_rate == 1.0
     assert result.regression.passed
     assert experiment_store.get(result.experiment_id) is not None
+    assert result.provenance is not None
+    assert result.provenance.provider == "baseline"
 
 
 def test_benchmark_service_emits_trace_events(tmp_path) -> None:

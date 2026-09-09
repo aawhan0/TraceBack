@@ -134,3 +134,31 @@ The benchmark layer deliberately avoids:
 - random sampling by default
 
 The goal is a transparent evaluation foundation that can grow into a production benchmarking system without making the core investigation path harder to reason about.
+
+
+## Reproducible execution provenance
+
+Every benchmark now records the execution identity alongside its metrics. A persisted experiment can therefore be traced back to:
+
+- application version
+- Git revision (TRACEBACK_GIT_SHA, then GITHUB_SHA, or unknown)
+- Python runtime version
+- Traceback environment
+- investigator provider
+- model name when an LLM benchmark is used
+
+The benchmark control path supports both deterministic baseline runs and Ollama-backed LLM runs. The same dataset, repetitions, evaluator, regression policy, and persistence path are used for both modes.
+
+### CLI
+
+Baseline benchmark:
+
+    traceback benchmark --mode baseline --repetitions 3 --name baseline-smoke
+
+LLM benchmark:
+
+    traceback benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
+
+### API
+
+POST /experiments accepts mode (baseline or llm) and an optional model. LLM mode requires a model and uses the configured Ollama endpoint. The response and persisted experiment record include a provenance object so benchmark results remain interpretable after the run has completed.

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from app.evaluation.experiments import ExperimentResult
+from app.evaluation.provenance import BenchmarkProvenance
 from app.evaluation.regression import RegressionFailure, RegressionReport
 from app.repository.experiments import ExperimentRecord, SQLiteExperimentStore
 
@@ -40,6 +41,14 @@ def make_record(experiment_id: str = "exp-1") -> ExperimentRecord:
         result=result,
         regression=regression,
         created_at=datetime.now(timezone.utc),
+        provenance=BenchmarkProvenance(
+            application_version="0.1.0",
+            git_revision="abc123",
+            python_version="3.12.0",
+            environment="test",
+            provider="baseline",
+            model=None,
+        ),
     )
 
 
@@ -54,6 +63,8 @@ def test_experiment_store_round_trips_record(tmp_path) -> None:
     assert loaded.result.scenario_pass_rates == {"db": 1.0, "redis": 0.5}
     assert loaded.regression is not None
     assert loaded.regression.failures[0].metric == "pass_rate"
+    assert loaded.provenance is not None
+    assert loaded.provenance.git_revision == "abc123"
 
 
 def test_experiment_store_lists_newest_first(tmp_path) -> None:
