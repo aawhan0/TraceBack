@@ -16,7 +16,7 @@ def test_calibration_report_exposes_bucket_metrics() -> None:
         [(0.9, True), (0.8, False), (0.2, False), (0.1, False)],
         bucket_count=5,
     )
-    assert len(report.buckets) == 2
+    assert len(report.buckets) == 3
     assert report.brier_score > 0
     assert report.expected_calibration_error > 0
 
