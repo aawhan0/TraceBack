@@ -12,7 +12,7 @@ const evidence = [
 
 export default function Page() {
   const [hasRun, setHasRun] = useState(true)
-  const [openSection, setOpenSection] = useState<string | null>('evidence')
+  const [openSection, setOpenSection] = useState<string | null>(null)
   const [mode, setMode] = useState('LLM')
   const [scenario, setScenario] = useState('Database pool exhaustion')
   const [model, setModel] = useState('llama3.2')
@@ -84,8 +84,8 @@ export default function Page() {
             <section className={styles.results} aria-live="polite">
               {!hasRun ? <div className={styles.emptyState}><Sparkles size={20} /><h2>Ready when you are</h2><p>Configure an incident and run the investigation to see the result.</p></div> : <>
                 <div className={styles.resultHeader}><div><div className={styles.sectionKicker}>LATEST RESULT</div><h2>Root cause diagnosis</h2></div><span className={styles.complete}><span /> Completed</span></div>
-                <div className={styles.diagnosis}><div className={styles.diagnosisMark}>01</div><div><h3>Database connection pool exhaustion</h3><p>The application is saturating its database connection pool under concurrent load. Slow queries introduced in the latest deployment hold connections longer than expected, causing requests to queue and eventually time out.</p></div></div>
-                <div className={styles.confidence}><span>Confidence</span><strong>0.87</strong><div className={styles.confidenceBar}><i /></div></div>
+                <div className={styles.diagnosis}><div><div className={styles.diagnosisLabel}>PASS</div><h3>Database connection pool exhaustion</h3><p>The application is saturating its database connection pool under concurrent load. Slow queries introduced in the latest deployment hold connections longer than expected, causing requests to queue and eventually time out.</p></div></div>
+                <div className={styles.confidence}><span>Confidence</span><strong>0.87</strong></div>
                 <div className={styles.checks}><div className={styles.sectionKicker}>EVALUATION CHECKS</div><div className={styles.checkRow}><span className={styles.checkIcon}>✓</span><span>Correctly identified the primary failure mode</span><b>pass</b></div><div className={styles.checkRow}><span className={styles.checkIcon}>✓</span><span>Diagnosis is supported by available evidence</span><b>pass</b></div><div className={styles.checkRow}><span className={styles.checkIcon}>✓</span><span>Suggested action is safe and reversible</span><b>pass</b></div></div>
                 <div className={styles.accordions}>
                   <button className={styles.accordionButton} onClick={() => setOpenSection(openSection === 'evidence' ? null : 'evidence')}><span><Database size={15} /> Evidence <em>3 items</em></span>{openSection === 'evidence' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</button>
