@@ -39,7 +39,7 @@ button:hover{opacity:.92}button.secondary{background:#fff;color:#172033;border-c
 <body>
 <div class="shell">
 <header class="topbar">
-<div class="brand"><div class="mark">T</div><div><h1>TraceBack</h1><p>LLM incident evaluation workspace</p></div></div>
+<div class="brand"><div class="mark">T</div><div><h1>Traceback</h1><p>LLM incident evaluation workspace</p></div></div>
 <span class="pill">Backend connected</span>
 </header>
 
