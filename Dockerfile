@@ -10,7 +10,8 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY app ./app
 
-RUN python -m pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" \
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir --upgrade --force-reinstall "setuptools>=78.1.1" "msgpack>=1.2.1,<2" \
     && pip install --no-cache-dir .
 
 RUN useradd --create-home --uid 10001 traceback \
