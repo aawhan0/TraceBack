@@ -395,6 +395,10 @@ LLM mode uses Ollama by default and reads:
 
 See docs/llm.md and docs/mcp.md for the detailed boundaries.
 
+## Production operations
+
+Traceback exposes lightweight operational telemetry without adding a vendor monitoring dependency. `GET /health/ready` reports dependency readiness, while `GET /health/metrics` exposes process-local counters and timing summaries in a Prometheus-compatible text shape. HTTP responses carry request correlation and response-time headers, and durable investigation jobs preserve a trace ID across their lifecycle. This keeps the core portable while leaving the telemetry sink replaceable for a production deployment.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull request guidance.
