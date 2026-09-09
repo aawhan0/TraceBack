@@ -70,10 +70,10 @@ def test_experiment_store_lists_newest_first(tmp_path) -> None:
 def test_experiment_store_replaces_same_id(tmp_path) -> None:
     store = SQLiteExperimentStore(str(tmp_path / "experiments.db"))
     store.save(make_record())
-    replacement = make_record()
-    replacement.result = None
-    # Dataclasses are frozen; this branch only documents the contract.
-    assert store.get("exp-1") is not None
+    store.save(make_record())
+    loaded = store.get("exp-1")
+    assert loaded is not None
+    assert loaded.name == "baseline"
 
 
 def test_experiment_store_validates_limit(tmp_path) -> None:
