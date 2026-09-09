@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api.dashboard import router as dashboard_router
 from app.api.errors import ErrorResponse, TracebackApiError
 from app.api.health_routes import router as health_router
 from app.api.jobs import router as jobs_router
@@ -33,6 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router)
     application.include_router(operations_router)
     application.include_router(jobs_router)
+    application.include_router(dashboard_router)
     return application
 
 app = create_app()
