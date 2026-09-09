@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from app.evaluation.experiments import ExperimentResult
+from app.evaluation.health import quality_snapshot, weighted_pass_rate
 from app.main import app
 
 
@@ -9,9 +11,6 @@ def test_health() -> None:
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "service": "traceback"}
 
-
-from app.evaluation.experiments import ExperimentResult
-from app.evaluation.health import quality_snapshot, weighted_pass_rate
 
 
 def _result(rate: float) -> ExperimentResult:
