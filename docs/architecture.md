@@ -250,3 +250,42 @@ InvestigationRun
 ```
 
 The `RunStore` protocol keeps SQLite-specific details out of the investigation domain. This makes historical runs available now while leaving room for a shared datastore later.
+
+
+## Evaluation platform
+
+The investigation path now feeds a higher-level benchmark platform.
+
+Scenario Catalog
+      |
+      v
+Dataset Manifest -----> fingerprint
+      |
+      v
+Benchmark Service
+      |
+      v
+Experiment Runner
+      |
+      +----> Investigation Service ----> Run Store
+      |
+      v
+Experiment Result
+      |
+      +----> Statistics
+      +----> Calibration
+      +----> Regression Policy
+      |
+      v
+Experiment Store
+
+Observability is orthogonal:
+
+Investigation / Benchmark
+      |
+      v
+TraceContext -> EventSink -> Timeline / Exporter
+
+This separation matters. Evaluation decides whether an investigation meets its contract; observability records how the system behaved; persistence stores what happened; the benchmark service coordinates repeatable runs.
+
+No layer is responsible for silently changing another layer's result.
