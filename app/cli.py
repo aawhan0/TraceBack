@@ -2,6 +2,7 @@ import argparse
 import json
 
 from app.config import Settings
+from app.evaluation.experiments import ExperimentRunner, ExperimentSpec
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS, get_scenario
@@ -26,6 +27,11 @@ def main() -> None:
     investigate.add_argument("--mode", choices=("baseline", "llm"), default="baseline")
     investigate.add_argument("--model")
 
+    benchmark = subparsers.add_parser("benchmark", help="Run a repeatable experiment across scenarios.")
+    benchmark.add_argument("--scenario-id", action="append", dest="scenario_ids")
+    benchmark.add_argument("--repetitions", type=int, default=1)
+    benchmark.add_argument("--name", default="cli-benchmark")
+
     runs = subparsers.add_parser("runs", help="List persisted investigation runs.")
     runs.add_argument("--scenario-id")
     runs.add_argument("--limit", type=int, default=20)
@@ -42,6 +48,19 @@ def main() -> None:
 
     if args.command == "scenarios":
         _json([{"id": item.id, "title": item.incident.title} for item in SCENARIOS])
+        return
+
+    if args.command == "benchmark":
+        scenario_ids = tuple(args.scenario_ids or [scenario.id for scenario in SCENARIOS])
+        try:
+            spec = ExperimentSpec(args.name, scenario_ids, args.repetitions)
+            result = ExperimentRunner(InvestigationService()).run(
+                spec,
+                {scenario.id: scenario for scenario in SCENARIOS},
+            )
+        except (KeyError, ValueError, RuntimeError) as exc:
+            parser.error(str(exc))
+        _json(result.__dict__)
         return
 
     if args.command == "runs":

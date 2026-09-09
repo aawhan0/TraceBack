@@ -51,3 +51,29 @@ def test_missing_run_returns_404() -> None:
 def test_unknown_scenario_returns_404() -> None:
     response = client.post("/investigations", json={"scenario_id": "missing"})
     assert response.status_code == 404
+
+
+def test_experiment_endpoint_runs_repeatable_baseline(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "experiment.db"))
+    response = client.post(
+        "/experiments",
+        json={
+            "name": "api-smoke",
+            "scenario_ids": ["database-pool-exhaustion", "redis-connectivity-failure"],
+            "repetitions": 2,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total_runs"] == 4
+    assert payload["passed_runs"] == 4
+    assert payload["pass_rate"] == 1.0
+    assert len(payload["scenario_pass_rates"]) == 2
+
+
+def test_experiment_endpoint_rejects_unknown_scenario() -> None:
+    response = client.post(
+        "/experiments",
+        json={"name": "invalid", "scenario_ids": ["missing"], "repetitions": 1},
+    )
+    assert response.status_code == 404

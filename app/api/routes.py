@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
-from app.api.schemas import InvestigationRequest, InvestigationResponse
+from app.api.schemas import ExperimentRequest, ExperimentResponse, InvestigationRequest, InvestigationResponse
 from app.config import Settings
+from app.evaluation.experiments import ExperimentRunner, ExperimentSpec
 from app.models.domain import HealthResponse, InvestigationRun, RunStats, RunSummary
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
@@ -94,3 +95,16 @@ def get_run(run_id: str) -> InvestigationRun:
     if run is None:
         raise HTTPException(status_code=404, detail="Investigation run not found")
     return run
+
+
+@router.post("/experiments", response_model=ExperimentResponse, tags=["experiments"])
+def run_experiment(request: ExperimentRequest) -> ExperimentResponse:
+    scenarios = {scenario.id: scenario for scenario in SCENARIOS}
+    try:
+        spec = ExperimentSpec(request.name, tuple(request.scenario_ids), request.repetitions)
+        result = ExperimentRunner().run(spec, scenarios)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return ExperimentResponse(**result.__dict__)

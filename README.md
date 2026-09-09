@@ -31,6 +31,8 @@ This makes model behavior measurable rather than purely subjective.
 - **Evidence recall and precision** metrics
 - **Repeated evaluation runs** for measuring model reliability
 - **Aggregate reports** for comparing model/configuration behavior
+- **Repeatable experiments** across scenarios and repetitions
+- **Regression gates** for protecting measured investigation quality
 - **Local-first inference** using Ollama
 - **Provider-agnostic LLM boundary** so inference can be replaced without redesigning the system
 - **FastAPI backend** for exposing the system as a real service
@@ -349,6 +351,7 @@ Every completed investigation now receives a stable run ID and is persisted loca
 ### API
 
 - `POST /investigations` — run and persist an investigation
+- `POST /experiments` — run a repeatable multi-scenario experiment
 - `GET /runs` — list recent runs, optionally filtered by scenario
 - `GET /runs/{run_id}` — inspect a complete persisted run
 - `GET /runs/stats` — aggregate historical pass rate, confidence, and latency
@@ -363,9 +366,10 @@ traceback investigate database-pool-exhaustion
 traceback runs --scenario-id database-pool-exhaustion
 traceback show <run-id>
 traceback stats --scenario-id database-pool-exhaustion
+traceback benchmark --repetitions 3 --name baseline-smoke
 ```
 
-See [docs/runs.md](docs/runs.md) for the persistence contract.
+See [docs/runs.md](docs/runs.md) for the persistence contract and [docs/experiments.md](docs/experiments.md) for repeatable benchmarks and regression gates.
 
 ## MCP development
 
