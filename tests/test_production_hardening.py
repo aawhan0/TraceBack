@@ -63,4 +63,3 @@ def test_settings_validate_rate_limit_configuration() -> None:
         Settings(rate_limit_requests=0).validate()
     with pytest.raises(ValueError, match="RATE_LIMIT_WINDOW_SECONDS"):
         Settings(rate_limit_window_seconds=0).validate()
-
