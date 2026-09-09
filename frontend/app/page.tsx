@@ -7,7 +7,6 @@ import { BarChartWidget } from '@/components/charts/bar-chart-widget'
 import { LineChartWidget } from '@/components/charts/line-chart-widget'
 import { ChartCard } from '@/components/charts/chart-card'
 import { StatCard } from '@/components/dashboard/stat-card'
-import { EmptyState } from '@/components/dashboard/empty-state'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,16 +64,13 @@ export default function HomePage() {
       const data = await api<Investigation>('/investigations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       setResult(data)
       setRuns(await api<Run[]>('/runs?limit=50'))
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Investigation failed')
-    } finally {
-      setBusy(false)
-    }
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Investigation failed') }
+    finally { setBusy(false) }
   }
 
   const evidenceById = useMemo(() => new Map((activeScenario?.evidence ?? []).map((item) => [item.id, item])), [activeScenario])
 
-  return <div className="space-y-6">
+  return <div className="space-y-5">
     <PageHeader title="Investigate" description="Trace a production-style failure to its root cause." />
     {notice && <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"><CircleAlert className="h-4 w-4" /><span className="flex-1">{notice}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setNotice('')}><X /></Button></div>}
 
@@ -95,15 +91,15 @@ export default function HomePage() {
           <Button type="button" disabled={!scenario || busy} onClick={investigate}>{busy ? <><LoaderCircle className="animate-spin" />Running</> : <><Play />Run investigation</>}</Button>
         </div>
       </div>
-      {result ? <div className="rounded-lg border border-border bg-card p-5 shadow-sm"><div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs text-muted-foreground">{activeScenario?.title || result.scenario_id}</p><h2 className="mt-1 text-base font-semibold">Investigation result</h2></div><span className={cn('inline-flex items-center gap-1 text-sm font-medium', result.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>{result.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}{result.passed ? 'Passed' : 'Needs review'}</span></div><div className="space-y-4"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Root cause</p><p className="mt-1 text-sm leading-6">{result.diagnosis.root_cause}</p></div><div><p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Evidence</p><div className="space-y-2">{result.diagnosis.evidence_ids.length ? result.diagnosis.evidence_ids.map((item, index) => { const evidence = evidenceById.get(item); return <div key={`${item}-${index}`} className="rounded-md bg-muted/40 px-3 py-2.5"><div className="flex gap-3"><span className="shrink-0 pt-0.5 font-mono text-xs text-muted-foreground">{item}</span><p className="text-sm leading-5">{evidence?.content || 'Evidence unavailable for this ID.'}</p></div>{evidence && <p className="mt-1 pl-[4.25rem] text-[11px] text-muted-foreground">{evidence.source} · {evidence.kind}</p>}</div> }) : <p className="text-sm text-muted-foreground">No evidence IDs returned.</p>}</div></div><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Recommended action</p><p className="mt-1 text-sm leading-6">{result.diagnosis.recommended_action}</p></div><div className="grid grid-cols-3 gap-3 border-t border-border pt-4"><Metric label="Confidence" value={`${Math.round(result.diagnosis.confidence * 100)}%`} /><Metric label="Duration" value={`${Math.round(result.duration_ms)} ms`} /><Metric label="Provider" value={result.provider} /></div></div></div> : <EmptyState icon={Search} title="No investigation result yet" description="Run an investigation to inspect the diagnosis, supporting evidence, and recommended action." />}
+      {result ? <div className="rounded-lg border border-border bg-card p-5 shadow-sm"><div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs text-muted-foreground">{activeScenario?.title || result.scenario_id}</p><h2 className="mt-1 text-base font-semibold">Investigation result</h2></div><span className={cn('inline-flex items-center gap-1 text-sm font-medium', result.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>{result.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}{result.passed ? 'Passed' : 'Needs review'}</span></div><div className="space-y-4"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Root cause</p><p className="mt-1 text-sm leading-6">{result.diagnosis.root_cause}</p></div><div><p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Evidence</p><div className="space-y-2">{result.diagnosis.evidence_ids.length ? result.diagnosis.evidence_ids.map((item, index) => { const evidence = evidenceById.get(item); return <div key={`${item}-${index}`} className="rounded-md bg-muted/40 px-3 py-2.5"><div className="flex gap-3"><span className="shrink-0 pt-0.5 font-mono text-xs text-muted-foreground">{item}</span><p className="text-sm leading-5">{evidence?.content || 'Evidence unavailable for this ID.'}</p></div>{evidence && <p className="mt-1 pl-[4.25rem] text-[11px] text-muted-foreground">{evidence.source} · {evidence.kind}</p>}</div> }) : <p className="text-sm text-muted-foreground">No evidence IDs returned.</p>}</div></div><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Recommended action</p><p className="mt-1 text-sm leading-6">{result.diagnosis.recommended_action}</p></div><div className="grid grid-cols-3 gap-3 border-t border-border pt-4"><Metric label="Confidence" value={`${Math.round(result.diagnosis.confidence * 100)}%`} /><Metric label="Duration" value={`${Math.round(result.duration_ms)} ms`} /><Metric label="Provider" value={result.provider} /></div></div></div> : <div className="flex min-h-[260px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/10 p-6 text-center lg:min-h-0"><div className="max-w-xs"><div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground"><Search className="h-4 w-4" /></div><h2 className="text-sm font-semibold">No investigation run yet</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">Run an investigation to see the diagnosis, supporting evidence, and recommended action.</p></div></div>}
     </section>
 
     <section className="grid gap-4 lg:grid-cols-2">
-      <ChartCard title="Confidence over runs" description="Observed confidence for the most recent investigations."><LineChartWidget data={chartRuns} xKey="run" series={[{ key: 'confidence', color: 'hsl(var(--primary))', label: 'Confidence' }]} valueSuffix="%" height={210} /></ChartCard>
-      <ChartCard title="Investigations by scenario" description="Coverage of the configured incident scenarios."><BarChartWidget data={scenarioCounts} xKey="scenario" series={[{ key: 'runs', color: 'hsl(var(--primary))', label: 'Runs' }]} height={210} /></ChartCard>
+      <ChartCard title="Confidence over runs" description="Observed confidence for the most recent investigations."><LineChartWidget data={chartRuns} xKey="run" series={[{ key: 'confidence', color: 'hsl(var(--primary))', label: 'Confidence' }]} valueSuffix="%" height={190} /></ChartCard>
+      <ChartCard title="Investigations by scenario" description="Coverage of the configured incident scenarios."><BarChartWidget data={scenarioCounts} xKey="scenario" series={[{ key: 'runs', color: 'hsl(var(--primary))', label: 'Runs' }]} height={190} /></ChartCard>
     </section>
 
-    <ChartCard title="Investigation duration" description="Latency across the most recent runs."><AreaChartWidget data={chartRuns} xKey="run" series={[{ key: 'duration', color: 'hsl(var(--primary))', label: 'Duration' }]} valueSuffix=" ms" height={200} /></ChartCard>
+    <ChartCard title="Investigation duration" description="Latency across the most recent runs."><AreaChartWidget data={chartRuns} xKey="run" series={[{ key: 'duration', color: 'hsl(var(--primary))', label: 'Duration' }]} valueSuffix=" ms" height={185} /></ChartCard>
   </div>
 }
 
