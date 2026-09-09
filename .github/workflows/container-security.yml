@@ -5,11 +5,10 @@ on:
     paths:
       - "Dockerfile"
       - ".dockerignore"
-      - ".github/workflows/container-release.yml"
       - ".github/workflows/container-security.yml"
       - "app/**"
       - "pyproject.toml"
-      - "uv.lock"
+      - "trivy.yaml"
   push:
     tags:
       - "v*.*.*"
@@ -40,8 +39,7 @@ jobs:
           context: .
           load: true
           tags: traceback:security
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
       - name: Scan image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -51,6 +49,8 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           severity: CRITICAL,HIGH
+          scanners: vuln
+          trivy-config: trivy.yaml
 
       - name: Generate SBOM
         uses: anchore/sbom-action@v0.20.5
