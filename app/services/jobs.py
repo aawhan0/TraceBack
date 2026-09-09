@@ -135,6 +135,23 @@ class JobStore:
                 "SELECT COUNT(*) FROM investigation_jobs WHERE status NOT IN ('completed', 'failed')"
             ).fetchone()[0]
             if count >= self.max_jobs:
+                terminal_count = db.execute(
+                    "SELECT COUNT(*) FROM investigation_jobs WHERE status IN ('completed', 'failed')"
+                ).fetchone()[0]
+                if terminal_count:
+                    prune_count = max(1, terminal_count // 4)
+                    rows = db.execute(
+                        """SELECT job_id FROM investigation_jobs
+                        WHERE status IN ('completed', 'failed')
+                        ORDER BY created_at ASC LIMIT ?""",
+                        (prune_count,),
+                    ).fetchall()
+                    for row in rows:
+                        db.execute("DELETE FROM investigation_jobs WHERE job_id = ?", (row["job_id"],))
+                    count = db.execute(
+                        "SELECT COUNT(*) FROM investigation_jobs WHERE status NOT IN ('completed', 'failed')"
+                    ).fetchone()[0]
+            if count >= self.max_jobs:
                 raise RuntimeError("job queue is full")
             now = datetime.now(timezone.utc)
             job = InvestigationJob(
