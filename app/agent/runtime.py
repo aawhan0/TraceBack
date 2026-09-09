@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from time import perf_counter
-from uuid import uuid4
 from typing import Callable
+from uuid import uuid4
 
 from app.agent.contracts import Investigator
 from app.models.domain import Diagnosis, Incident
@@ -58,6 +58,7 @@ class InvestigationRuntime:
         started = perf_counter()
         steps: list[InvestigationStep] = []
         self._trace.record('investigation.created', execution_id=execution_id, incident_id=incident.id)
+        self._trace.record('investigation.started', execution_id=execution_id, incident_id=incident.id)
         self._record_step(steps, started, InvestigationPhase.RUNNING, 'investigation.started')
         try:
             self._check_deadline(started)
