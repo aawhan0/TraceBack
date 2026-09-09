@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter\nfrom fastapi.responses import PlainTextResponse\n\nfrom app.api.middleware import METRICS
 
 from app.api.dependencies import get_settings
 from app.api.schemas import HealthDetailResponse, HealthComponentResponse
