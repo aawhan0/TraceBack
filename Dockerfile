@@ -18,8 +18,8 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
     && /opt/venv/bin/python -m pip install --no-cache-dir --upgrade --force-reinstall "setuptools>=78.1.1" "msgpack>=1.2.1,<2" \
     && /opt/venv/bin/python -m pip check \
     && rm -rf /root/.cache/pip /tmp/pip-* \
-    && find /usr/local/lib/python3.12/site-packages -maxdepth 1 -type d \\( -name 'msgpack*' -o -name 'setuptools*' \\) -exec rm -rf {} + \
-    && if [ -d /usr/lib/python3/dist-packages ]; then find /usr/lib/python3/dist-packages -maxdepth 1 -type d \\( -name 'msgpack*' -o -name 'setuptools*' \\) -exec rm -rf {} +; fi \
+    && find /usr/local/lib/python3.12/site-packages -maxdepth 1 -type d \( -name 'msgpack*' -o -name 'setuptools*' \) -exec rm -rf {} + \
+    && if [ -d /usr/lib/python3/dist-packages ]; then find /usr/lib/python3/dist-packages -maxdepth 1 -type d \( -name 'msgpack*' -o -name 'setuptools*' \) -exec rm -rf {} +; fi \
     && /opt/venv/bin/python -c "import msgpack, setuptools; assert msgpack.__version__ >= '1.2.1'; assert setuptools.__version__ >= '78.1.1'"
 
 ENV PATH="/opt/venv/bin:$PATH"
