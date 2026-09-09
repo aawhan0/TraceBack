@@ -23,9 +23,13 @@ def test_idempotency_returns_same_job(tmp_path):
 
 
 def test_invalid_transition_is_rejected(tmp_path):
+    import pytest
+
     store = JobStore(database_path=str(tmp_path / "jobs.db"))
     job = store.create("database-pool-exhaustion", "baseline")
-    store.update(job.job_id, status=JobStatus.COMPLETED)
+
+    with pytest.raises(ValueError, match="invalid job transition"):
+        store.update(job.job_id, status=JobStatus.COMPLETED)
 
 
 def test_retry_transition_is_supported(tmp_path):
