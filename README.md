@@ -431,3 +431,17 @@ Typical workflow:
     traceback benchmark --repetitions 3 --min-pass-rate 1.0 --report
 
 See [docs/benchmarking.md](docs/benchmarking.md) for the benchmark contract and [docs/observability.md](docs/observability.md) for tracing and structured logging.
+
+
+## Reproducible model benchmarking
+
+Benchmark runs are now explicitly attributable to the execution environment and investigator configuration. Each experiment can record its application version, Git revision, Python version, environment, provider, and model alongside the measured result.
+
+The benchmark path supports both the deterministic baseline and the Ollama-backed investigator:
+
+```bash
+traceback benchmark --mode baseline --repetitions 3 --name baseline-smoke
+traceback benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
+```
+
+This keeps model comparisons on the same scenario dataset, evaluator, regression policy, and persistence path instead of creating a separate evaluation implementation for LLM runs.
