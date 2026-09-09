@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from app.evaluation.dataset import DatasetManifest
 from app.evaluation.experiments import ExperimentResult, ExperimentRunner, ExperimentSpec
+from app.evaluation.provenance import BenchmarkProvenance
 from app.evaluation.regression import (
     RegressionPolicy,
     RegressionReport,
@@ -26,12 +27,26 @@ class BenchmarkRequest:
     dataset: DatasetManifest
     repetitions: int = 1
     policy: RegressionPolicy = RegressionPolicy()
+    provider: str = "baseline"
+    model: str | None = None
 
     def __post_init__(self) -> None:
         if not self.name.strip():
             raise ValueError("benchmark name is required")
         if self.repetitions < 1 or self.repetitions > 100:
             raise ValueError("repetitions must be between 1 and 100")
+        if not self.provider.strip():
+            raise ValueError("benchmark provider is required")
+        if self.provider == "baseline" and self.model is not None:
+            raise ValueError("baseline benchmarks cannot declare a model")
+        if self.provider != "baseline" and not (self.model or "").strip():
+            raise ValueError("non-baseline benchmarks require a model")
+
+    def provenance(self) -> BenchmarkProvenance:
+        return BenchmarkProvenance.from_environment(
+            provider=self.provider,
+            model=self.model,
+        )
 
 
 @dataclass(frozen=True)
@@ -42,6 +57,7 @@ class BenchmarkResult:
     dataset_name: str
     dataset_version: str
     dataset_fingerprint: str
+    provenance: BenchmarkProvenance
 
 
 class BenchmarkService:
@@ -70,12 +86,16 @@ class BenchmarkService:
             request.repetitions,
         )
         runner = ExperimentRunner(self.investigation_service)
+        provenance = request.provenance()
         with TraceSpan(
             context,
             "benchmark",
             benchmark=request.name,
             dataset=request.dataset.name,
             version=request.dataset.version,
+            provider=provenance.provider,
+            model=provenance.model or "",
+            git_revision=provenance.git_revision,
         ):
             result = runner.run(spec, catalog)
             metrics = metrics_from_experiment(result)
@@ -95,6 +115,7 @@ class BenchmarkService:
                 result=result,
                 regression=regression,
                 created_at=utc_now(),
+                provenance=provenance,
             )
             self.experiment_store.save(record)
         return BenchmarkResult(
@@ -104,6 +125,7 @@ class BenchmarkService:
             dataset_name=request.dataset.name,
             dataset_version=request.dataset.version,
             dataset_fingerprint=request.dataset.fingerprint,
+            provenance=provenance,
         )
 
     def get(self, experiment_id: str) -> ExperimentRecord | None:
