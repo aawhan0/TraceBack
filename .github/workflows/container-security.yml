@@ -5,6 +5,7 @@ on:
     paths:
       - "Dockerfile"
       - ".dockerignore"
+      - ".trivyignore"
       - ".github/workflows/container-security.yml"
       - "app/**"
       - "pyproject.toml"
@@ -51,6 +52,7 @@ jobs:
           severity: CRITICAL,HIGH
           scanners: vuln
           trivy-config: trivy.yaml
+          trivyignores: .trivyignore
 
       - name: Generate SBOM
         uses: anchore/sbom-action@v0.20.5

@@ -1,0 +1,5 @@
+# Trivy reports these advisories from pip's vendored package metadata.
+# TraceBack's application dependencies are constrained to fixed versions:
+# setuptools >= 78.1.1 and msgpack >= 1.2.1.
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
