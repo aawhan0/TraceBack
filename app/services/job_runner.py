@@ -6,7 +6,7 @@ from app.config import Settings
 from app.providers.ollama import OllamaProvider
 from app.scenarios.catalog import get_scenario
 from app.services.investigation import InvestigationService
-from app.services.jobs import JobStatus, JobStore
+from app.observability.events import TraceContext, TraceSpan\nfrom app.services.jobs import JobStatus, JobStore
 
 
 class InvestigationJobRunner:
