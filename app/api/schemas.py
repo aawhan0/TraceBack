@@ -90,3 +90,17 @@ class DatasetResponse(BaseModel):
     fingerprint: str
     case_count: int
     scenario_ids: list[str]
+
+
+class HealthComponentResponse(BaseModel):
+    name: str
+    status: Literal["ok", "degraded", "failed"]
+    latency_ms: float = Field(ge=0)
+    detail: str
+
+
+class HealthDetailResponse(BaseModel):
+    status: Literal["ok", "degraded"]
+    service: str
+    environment: str
+    checks: list[HealthComponentResponse]
