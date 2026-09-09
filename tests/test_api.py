@@ -121,3 +121,30 @@ def test_core_dataset_endpoint_is_versioned() -> None:
     assert payload["version"] == "1"
     assert payload["case_count"] == 3
     assert len(payload["fingerprint"]) == 64
+
+
+def test_experiment_comparison_endpoint_returns_deltas(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TRACEBACK_DATABASE_PATH", str(tmp_path / "compare.db"))
+    payload = {
+        "name": "comparison-smoke",
+        "scenario_ids": ["database-pool-exhaustion"],
+        "repetitions": 1,
+    }
+    first = client.post("/experiments", json=payload)
+    second = client.post("/experiments", json={**payload, "name": "comparison-candidate"})
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    comparison = client.get(
+        f"/experiments/{first.json()['experiment_id']}/compare/{second.json()['experiment_id']}"
+    )
+    assert comparison.status_code == 200
+    body = comparison.json()
+    assert body["dataset"]["fingerprint"] == first.json()["dataset_fingerprint"]
+    assert body["metrics"]["pass_rate"]["delta"] == 0.0
+    assert body["verdict"] == "unchanged"
+
+
+def test_experiment_comparison_endpoint_rejects_missing_experiment() -> None:
+    response = client.get("/experiments/missing/compare/also-missing")
+    assert response.status_code == 404
