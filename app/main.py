@@ -30,7 +30,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     application.add_middleware(RequestContextMiddleware)
-    application.add_middleware(SecurityMiddleware, limiter=RateLimiter(max_requests=120, window_seconds=60))
+    application.add_middleware(
+        SecurityMiddleware,
+        limiter=RateLimiter(
+            max_requests=settings.rate_limit_requests,
+            window_seconds=settings.rate_limit_window_seconds,
+        ),
+    )
 
     @application.exception_handler(TracebackApiError)
     async def traceback_error_handler(request: Request, exc: TracebackApiError):
