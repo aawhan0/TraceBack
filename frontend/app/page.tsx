@@ -72,7 +72,7 @@ export default function HomePage() {
   const lastRun = runs[0]
   const lastRunScenario = lastRun ? scenarios.find((item) => item.id === String(lastRun.scenario_id ?? '')) : undefined
 
-  return <div className="space-y-5">
+  return <div className="space-y-5 pb-8">
     <PageHeader title="Investigate" description="Trace a production-style failure to its root cause." />
     {notice && <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"><CircleAlert className="h-4 w-4" /><span className="flex-1">{notice}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setNotice('')}><X /></Button></div>}
 
