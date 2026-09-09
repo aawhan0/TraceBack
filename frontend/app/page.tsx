@@ -7,7 +7,6 @@ import { BarChartWidget } from '@/components/charts/bar-chart-widget'
 import { LineChartWidget } from '@/components/charts/line-chart-widget'
 import { ChartCard } from '@/components/charts/chart-card'
 import { StatCard } from '@/components/dashboard/stat-card'
-import { EmptyState } from '@/components/dashboard/empty-state'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,16 +64,13 @@ export default function HomePage() {
       const data = await api<Investigation>('/investigations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       setResult(data)
       setRuns(await api<Run[]>('/runs?limit=50'))
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Investigation failed')
-    } finally {
-      setBusy(false)
-    }
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Investigation failed') }
+    finally { setBusy(false) }
   }
 
   const evidenceById = useMemo(() => new Map((activeScenario?.evidence ?? []).map((item) => [item.id, item])), [activeScenario])
 
-  return <div className="space-y-6">
+  return <div className="space-y-5">
     <PageHeader title="Investigate" description="Trace a production-style failure to its root cause." />
     {notice && <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"><CircleAlert className="h-4 w-4" /><span className="flex-1">{notice}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setNotice('')}><X /></Button></div>}
 
