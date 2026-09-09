@@ -21,6 +21,7 @@ from app.services.benchmark import BenchmarkRequest, BenchmarkService, default_d
 from app.services.investigation import InvestigationService
 from app.evaluation.matrix import ExperimentConfiguration
 from app.services.matrix import MatrixRequest, MatrixService
+from app.evaluation.regression import RegressionPolicy
 
 router = APIRouter()
 
@@ -194,7 +195,7 @@ def run_experiment_matrix(request: MatrixRequest) -> MatrixResponse:
                 dataset,
                 configurations,
                 repetitions=request.repetitions,
-                policy=__import__("app.evaluation.regression", fromlist=["RegressionPolicy"]).RegressionPolicy(
+                policy=RegressionPolicy(
                     minimum_pass_rate=request.min_pass_rate
                 ),
             ),
