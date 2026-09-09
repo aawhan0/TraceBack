@@ -457,3 +457,14 @@ traceback compare <baseline-experiment-id> <candidate-experiment-id> --report
 ```
 
 This makes model evaluation a closed loop: **run → persist provenance → compare → identify regressions/improvements**.
+
+
+### Multi-configuration experiment matrices
+
+TraceBack can run several configurations against the same immutable dataset and persist each result as a normal experiment:
+
+    traceback matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2 --config qwen=llm:qwen2.5 --repetitions 3
+
+The first configuration is the comparison baseline. Each configuration receives the same dataset fingerprint, and the matrix returns the persisted experiment IDs plus the best-performing configuration. This keeps model evaluation reproducible while avoiding a separate benchmark implementation for every provider/model combination.
+
+API clients can use POST /experiments/matrix; the frontend remains deferred until the backend contracts are complete.
