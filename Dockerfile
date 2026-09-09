@@ -11,16 +11,20 @@ COPY pyproject.toml README.md ./
 COPY app ./app
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir . \
-    && python -m pip install --no-cache-dir --upgrade --force-reinstall "setuptools>=78.1.1" "msgpack>=1.2.1,<2" \
-    && python -m pip check \
-    && rm -rf /root/.cache/pip \
-    && find /usr/local/lib/python3.12/site-packages -type d -name '__pycache__' -prune -exec rm -rf {} + \
-    && python -c "import msgpack, setuptools; assert tuple(map(int, msgpack.__version__.split('.')[:2])) >= (1, 2); assert tuple(map(int, setuptools.__version__.split('.')[:2])) >= (78, 1)"
+    && python -m venv /opt/venv \
+    && /opt/venv/bin/python -m pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/python -m pip install --no-cache-dir . \
+    && /opt/venv/bin/python -m pip install --no-cache-dir --upgrade --force-reinstall "setuptools>=78.1.1" "msgpack>=1.2.1,<2" \
+    && /opt/venv/bin/python -m pip check \
+    && rm -rf /root/.cache/pip /tmp/pip-* \
+    && find /usr/local/lib/python3.12/site-packages -maxdepth 1 -type d \( -name 'msgpack*' -o -name 'setuptools*' \) -exec rm -rf {} + \
+    && /opt/venv/bin/python -c "import msgpack, setuptools; assert msgpack.__version__ >= '1.2.1'; assert setuptools.__version__ >= '78.1.1'"
+
+ENV PATH="/opt/venv/bin:$PATH"
 
 RUN useradd --create-home --uid 10001 traceback \
     && mkdir -p /data \
-    && chown -R traceback:traceback /app /data
+    && chown -R traceback:traceback /app /data /opt/venv
 
 USER traceback
 
