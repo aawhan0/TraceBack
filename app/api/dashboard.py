@@ -85,32 +85,82 @@ async function matrix(){
     setStatus("matrixStatus","Request failed","bad")
   }
 }
+function toggleExperiment(id,checked){
+  if(checked)selectedExperimentIds.add(id);
+  else selectedExperimentIds.delete(id);
+}
 async function loadExperiments(){
   try{
-    const xs=await api("/experiments?limit=30");
-    if(!xs.length){$("experiments").innerHTML='<div class="empty">No persisted experiments yet.</div>';return}
-    selectedExperimentIds=new Set([...selectedExperimentIds].filter(id=>xs.some(x=>x.experiment_id===id)));
-    $("experiments").innerHTML='<div class="table-wrap"><table><thead><tr><th></th><th>Name</th><th>Pass rate</th><th>Runs</th><th>Regression</th><th>Created</th></tr></thead><tbody>'+xs.map(x=>'<tr><td><input type="checkbox" name="exp" value="'+escapeHtml(x.experiment_id)+'" '+(selectedExperimentIds.has(x.experiment_id)?"checked":"")+' onchange="toggleExperiment(\''+escapeHtml(x.experiment_id)+'\',this.checked)"></td><td><strong>'+escapeHtml(x.name)+'</strong></td><td>'+pct(x.pass_rate)+'</td><td>'+x.passed_runs+"/"+x.total_runs+'</td><td class="'+(x.regression_passed===false?"bad":"good")+'">'+(x.regression_passed===null?"—":x.regression_passed?"PASS":"FAIL")+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td></tr>').join("")+'</tbody></table></div>'
-  }catch(e){
-    $("experiments").innerHTML='<div class="empty">Unable to load experiments: '+escapeHtml(e.message)+'</div>'
+    const experiments=await api("/experiments?limit=30");
+    if(!experiments.length){
+      $("experiments").innerHTML='<div class="empty">No persisted experiments yet.</div>';
+      return;
+    }
+    const visibleIds=new Set(experiments.map(item=>item.experiment_id));
+    selectedExperimentIds=new Set([...selectedExperimentIds].filter(id=>visibleIds.has(id)));
+    const wrapper=document.createElement("div");
+    wrapper.className="table-wrap";
+    const table=document.createElement("table");
+    table.innerHTML='<thead><tr><th></th><th>Name</th><th>Pass rate</th><th>Runs</th><th>Regression</th><th>Created</th></tr></thead>';
+    const tbody=document.createElement("tbody");
+    experiments.forEach(item=>{
+      const row=document.createElement("tr");
+      const checkboxCell=document.createElement("td");
+      const checkbox=document.createElement("input");
+      checkbox.type="checkbox";
+      checkbox.name="exp";
+      checkbox.value=item.experiment_id;
+      checkbox.checked=selectedExperimentIds.has(item.experiment_id);
+      checkbox.addEventListener("change",()=>toggleExperiment(item.experiment_id,checkbox.checked));
+      checkboxCell.appendChild(checkbox);
+      const nameCell=document.createElement("td");
+      const strong=document.createElement("strong");
+      strong.textContent=item.name;
+      nameCell.appendChild(strong);
+      const passCell=document.createElement("td");
+      passCell.textContent=pct(item.pass_rate);
+      const runsCell=document.createElement("td");
+      runsCell.textContent=item.passed_runs+"/"+item.total_runs;
+      const regressionCell=document.createElement("td");
+      regressionCell.textContent=item.regression_passed===null?"—":item.regression_passed?"PASS":"FAIL";
+      regressionCell.className=item.regression_passed===false?"bad":"good";
+      const createdCell=document.createElement("td");
+      createdCell.textContent=new Date(item.created_at).toLocaleString();
+      row.append(checkboxCell,nameCell,passCell,runsCell,regressionCell,createdCell);
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+    $("experiments").replaceChildren(wrapper);
+  }catch(error){
+    $("experiments").innerHTML='<div class="empty">Unable to load experiments: '+escapeHtml(error.message)+'</div>';
   }
 }
-function toggleExperiment(id,checked){if(checked)selectedExperimentIds.add(id);else selectedExperimentIds.delete(id)}
 async function compareSelected(){
   const chosen=[...selectedExperimentIds];
   if(chosen.length!==2){alert("Select exactly two experiments.");return}
   try{
-    const r=await api("/experiments/"+encodeURIComponent(chosen[0])+"/compare/"+encodeURIComponent(chosen[1]));
+    const result=await api("/experiments/"+encodeURIComponent(chosen[0])+"/compare/"+encodeURIComponent(chosen[1]));
     $("compareResult").classList.remove("hidden");
-    $("compareMetrics").innerHTML='<div class="metric"><span>Pass-rate delta</span><strong class="'+(r.metrics.pass_rate.delta>=0?"good":"bad")+'">'+pct(r.metrics.pass_rate.delta)+'</strong></div><div class="metric"><span>Confidence delta</span><strong>'+Number(r.metrics.average_confidence.delta).toFixed(3)+'</strong></div><div class="metric"><span>Latency delta</span><strong>'+ms(r.metrics.average_duration_ms.delta)+'</strong></div><div class="metric"><span>Verdict</span><strong class="'+(r.verdict==="improved"?"good":r.verdict==="regressed"?"bad":"muted")+'">'+escapeHtml(r.verdict)+'</strong></div>';
-    $("compareDetails").textContent=JSON.stringify(r,null,2)
-  }catch(e){alert("Comparison failed: "+e.message)}
+    $("compareMetrics").innerHTML=
+      '<div class="metric"><span>Pass-rate delta</span><strong class="'+(result.metrics.pass_rate.delta>=0?"good":"bad")+'">'+pct(result.metrics.pass_rate.delta)+'</strong></div>'+
+      '<div class="metric"><span>Confidence delta</span><strong>'+Number(result.metrics.average_confidence.delta).toFixed(3)+'</strong></div>'+
+      '<div class="metric"><span>Latency delta</span><strong>'+ms(result.metrics.average_duration_ms.delta)+'</strong></div>'+
+      '<div class="metric"><span>Verdict</span><strong class="'+(result.verdict==="improved"?"good":result.verdict==="regressed"?"bad":"muted")+'">'+escapeHtml(result.verdict)+'</strong></div>';
+    $("compareDetails").textContent=JSON.stringify(result,null,2);
+  }catch(error){
+    alert("Comparison failed: "+error.message);
+  }
 }
 async function refreshOperational(){
-  try{$("jobs").textContent=JSON.stringify(await api("/jobs?limit=10"),null,2)}catch(e){$("jobs").textContent="Unable to load jobs: "+e.message}
-  try{$("runs").textContent=JSON.stringify(await api("/runs?limit=10"),null,2)}catch(e){$("runs").textContent="Unable to load runs: "+e.message}
+  try{$("jobs").textContent=JSON.stringify(await api("/jobs?limit=10"),null,2)}catch(error){$("jobs").textContent="Unable to load jobs: "+error.message}
+  try{$("runs").textContent=JSON.stringify(await api("/runs?limit=10"),null,2)}catch(error){$("runs").textContent="Unable to load runs: "+error.message}
 }
-init().catch(e=>{console.error(e);$("investResult").textContent="Unable to initialize: "+e.message;setStatus("investStatus","Backend unavailable","bad")});
+init().catch(error=>{
+  console.error(error);
+  $("investResult").textContent="Unable to initialize: "+error.message;
+  setStatus("investStatus","Backend unavailable","bad");
+});
 setInterval(refreshOperational,5000);
 setInterval(loadExperiments,10000);
 </script></body></html>"""
