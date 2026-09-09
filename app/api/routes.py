@@ -4,6 +4,7 @@ from app.api.schemas import (
     BenchmarkProvenanceResponse,
     BenchmarkResponse,
     MatrixResponse,
+    MatrixRequest as MatrixApiRequest,
     DatasetResponse,
     ExperimentRequest,
     ExperimentSummaryResponse,
@@ -20,7 +21,7 @@ from app.scenarios.catalog import SCENARIOS, get_scenario
 from app.services.benchmark import BenchmarkRequest, BenchmarkService, default_dataset
 from app.services.investigation import InvestigationService
 from app.evaluation.matrix import ExperimentConfiguration
-from app.services.matrix import MatrixRequest, MatrixService
+from app.services.matrix import MatrixRequest as MatrixServiceRequest, MatrixService
 from app.evaluation.regression import RegressionPolicy
 
 router = APIRouter()
@@ -176,7 +177,7 @@ def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
 
 
 @router.post("/experiments/matrix", response_model=MatrixResponse, tags=["experiments"])
-def run_experiment_matrix(request: MatrixRequest) -> MatrixResponse:
+def run_experiment_matrix(request: MatrixApiRequest) -> MatrixResponse:
     catalog = {scenario.id: scenario for scenario in SCENARIOS}
     try:
         dataset = build_manifest(
@@ -190,7 +191,7 @@ def run_experiment_matrix(request: MatrixRequest) -> MatrixResponse:
             for item in request.configurations
         )
         result = MatrixService().run(
-            MatrixRequest(
+            MatrixServiceRequest(
                 request.matrix_id,
                 dataset,
                 configurations,
