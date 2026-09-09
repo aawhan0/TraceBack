@@ -8,7 +8,7 @@ type Experiment = { experiment_id: string; name: string; dataset_name: string; d
 type Run = Record<string, unknown>
 type View = 'investigate' | 'experiments' | 'history'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || '/api'
 
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API}${path}`, options)
