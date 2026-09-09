@@ -8,10 +8,10 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.observability.audit import AuditEvent, AuditLog
-from app.services.request_validation import validate_request_id
+from app.services.request_validation import validate_request_id\nfrom app.observability.metrics import MetricsRegistry
 
 
-class RequestContextMiddleware(BaseHTTPMiddleware):
+METRICS = MetricsRegistry()\n\n\nclass RequestContextMiddleware(BaseHTTPMiddleware):
     """Attach a stable request ID and timing headers to every response."""
 
     def __init__(self, app, audit_log: AuditLog | None = None):
