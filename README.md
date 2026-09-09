@@ -472,3 +472,15 @@ TraceBack can run several configurations against the same immutable dataset and 
 The first configuration is the comparison baseline. Each configuration receives the same dataset fingerprint, and the matrix returns the persisted experiment IDs plus the best-performing configuration. This keeps model evaluation reproducible while avoiding a separate benchmark implementation for every provider/model combination.
 
 API clients can use POST /experiments/matrix; the frontend remains deferred until the backend contracts are complete.
+
+
+## Container deployment
+
+TraceBack includes a production-oriented Docker image for running the API as a non-root user with SQLite state mounted at `/data`. The container exposes port 8000 and includes a lightweight `/health` healthcheck.
+
+```bash
+docker build -t traceback:local .
+docker run --rm -p 8000:8000 -v traceback-data:/data traceback:local
+```
+
+See [docs/deployment.md](docs/deployment.md) for configuration, persistence, health checks, and the current single-node deployment boundary.
