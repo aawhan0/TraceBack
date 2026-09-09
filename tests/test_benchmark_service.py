@@ -3,7 +3,6 @@ import pytest
 from app.evaluation.dataset import build_manifest
 from app.evaluation.experiments import ExperimentResult
 from app.evaluation.regression import RegressionFailure, RegressionPolicy, RegressionReport
-from app.models.domain import Diagnosis
 from app.observability.events import InMemoryEventSink, TraceContext
 from app.repository.experiments import SQLiteExperimentStore
 from app.repository.runs import SQLiteRunStore
