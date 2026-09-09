@@ -40,3 +40,18 @@ def test_invalid_json_shape_returns_structured_error() -> None:
     assert payload["code"] == "validation_error"
     assert payload["request_id"]
     assert payload["details"]["errors"]
+
+def test_security_headers_are_present() -> None:
+    response = client.get("/health")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+    assert response.headers["Cache-Control"] == "no-store"
+
+
+def test_invalid_request_id_is_replaced() -> None:
+    response = client.get("/health", headers={"X-Request-ID": "\x00bad"})
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"]
+    assert response.headers["X-Request-ID"] != "\x00bad"
+
