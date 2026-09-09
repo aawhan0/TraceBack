@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
-type Scenario = { id: string; title: string }
+type Evidence = { id: string; content: string; source: string; kind: string }
+type Scenario = { id: string; title: string; evidence: Evidence[] }
 type Diagnosis = { root_cause: string; evidence_ids: string[]; confidence: number; recommended_action: string }
 type Investigation = { scenario_id: string; mode: 'baseline' | 'llm'; provider: string; diagnosis: Diagnosis; passed: boolean; duration_ms: number }
 type Run = Record<string, unknown>
@@ -40,12 +41,15 @@ export default function HomePage() {
   const [runs, setRuns] = useState<Run[]>([])
 
   useEffect(() => {
-    void api<Scenario[]>('/scenarios').then((items) => { setScenarios(items); if (items[0]) setScenario(items[0].id) }).catch((error) => setNotice(error instanceof Error ? error.message : 'Unable to connect to TraceBack'))
+    void api<Scenario[]>('/scenarios').then((items) => {
+      setScenarios(items)
+      if (items[0]) setScenario(items[0].id)
+    }).catch((error) => setNotice(error instanceof Error ? error.message : 'Unable to connect to TraceBack'))
     void api<Run[]>('/runs?limit=50').then(setRuns).catch(() => undefined)
   }, [])
 
   const activeScenario = useMemo(() => scenarios.find((item) => item.id === scenario), [scenarios, scenario])
-  const chartRuns = useMemo(() => runs.slice().reverse().slice(-20).map((run, index) => ({ run: String(index + 1), confidence: Math.round(Number(run.confidence ?? 0) * 100), duration: Math.round(Number(run.duration_ms ?? 0)), passed: Boolean(run.passed) ? 1 : 0 })), [runs])
+  const chartRuns = useMemo(() => runs.slice().reverse().slice(-20).map((run, index) => ({ run: String(index + 1), confidence: Math.round(Number(run.confidence ?? 0) * 100), duration: Math.round(Number(run.duration_ms ?? 0)) })), [runs])
   const scenarioCounts = useMemo(() => scenarios.map((item) => ({ scenario: item.title.length > 18 ? `${item.title.slice(0, 18)}…` : item.title, runs: runs.filter((run) => String(run.scenario_id ?? '') === item.id).length })), [scenarios, runs])
   const totalRuns = runs.length
   const passedRuns = runs.filter((run) => Boolean(run.passed)).length
@@ -61,40 +65,45 @@ export default function HomePage() {
       const data = await api<Investigation>('/investigations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       setResult(data)
       setRuns(await api<Run[]>('/runs?limit=50'))
-    } catch (error) { setNotice(error instanceof Error ? error.message : 'Investigation failed') }
-    finally { setBusy(false) }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Investigation failed')
+    } finally {
+      setBusy(false)
+    }
   }
 
-  return <div className="space-y-8">
+  const evidenceById = useMemo(() => new Map((activeScenario?.evidence ?? []).map((item) => [item.id, item])), [activeScenario])
+
+  return <div className="space-y-6">
     <PageHeader title="Investigate" description="Trace a production-style failure to its root cause." />
     {notice && <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"><CircleAlert className="h-4 w-4" /><span className="flex-1">{notice}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setNotice('')}><X /></Button></div>}
 
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard title="Investigations" value={totalRuns} icon={Activity} />
       <StatCard title="Pass rate" value={`${passRate}%`} icon={Check} />
       <StatCard title="Avg. confidence" value={`${avgConfidence}%`} icon={Gauge} />
       <StatCard title="Avg. duration" value={`${avgDuration} ms`} icon={Activity} />
     </div>
 
-    <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <div className="mb-6"><div className="mb-2 flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary"><Search className="h-4 w-4" /></div><h2 className="text-base font-semibold">Run investigation</h2><p className="mt-1 text-sm text-muted-foreground">Choose an incident and run the deterministic baseline or LLM path.</p></div>
-        <div className="space-y-5">
+    <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+        <div className="mb-5"><div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary"><Search className="h-4 w-4" /></div><h2 className="text-base font-semibold">Run investigation</h2><p className="mt-1 text-sm text-muted-foreground">Choose an incident and run the deterministic baseline or LLM path.</p></div>
+        <div className="space-y-4">
           <div className="space-y-2"><label className="text-sm font-medium">Incident</label><select value={scenario} onChange={(e) => setScenario(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"><option value="">Select an incident</option>{scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></div>
           <div className="space-y-2"><label className="text-sm font-medium">Mode</label><div className="grid grid-cols-2 rounded-md bg-muted p-1"><Button type="button" variant={mode === 'baseline' ? 'default' : 'ghost'} className="h-9" onClick={() => setMode('baseline')}>Baseline</Button><Button type="button" variant={mode === 'llm' ? 'default' : 'ghost'} className="h-9" onClick={() => setMode('llm')}>LLM</Button></div></div>
           <div className="space-y-2"><label className="text-sm font-medium">Model <span className="font-normal text-muted-foreground">LLM only</span></label><Input disabled={mode !== 'llm'} value={model} onChange={(e) => setModel(e.target.value)} placeholder="llama3.2" /></div>
           <Button type="button" disabled={!scenario || busy} onClick={investigate}>{busy ? <><LoaderCircle className="animate-spin" />Running</> : <><Play />Run investigation</>}</Button>
         </div>
       </div>
-      {result ? <div className="rounded-lg border border-border bg-card p-6 shadow-sm"><div className="mb-5 flex items-start justify-between gap-4"><div><p className="text-xs text-muted-foreground">{activeScenario?.title || result.scenario_id}</p><h2 className="mt-1 text-base font-semibold">Investigation result</h2></div><span className={cn('inline-flex items-center gap-1 text-sm font-medium', result.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>{result.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}{result.passed ? 'Passed' : 'Needs review'}</span></div><div className="space-y-5"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Root cause</p><p className="mt-1 text-sm leading-6">{result.diagnosis.root_cause}</p></div><div><p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Evidence</p><div className="space-y-2">{result.diagnosis.evidence_ids.length ? result.diagnosis.evidence_ids.map((item, index) => <div key={`${item}-${index}`} className="flex gap-3 rounded-md bg-muted/40 px-3 py-2 text-sm"><span className="font-mono text-xs text-muted-foreground">E-{String(index + 1).padStart(2, '0')}</span><p>{item}</p></div>) : <p className="text-sm text-muted-foreground">No evidence IDs returned.</p>}</div></div><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Recommended action</p><p className="mt-1 text-sm leading-6">{result.diagnosis.recommended_action}</p></div><div className="grid grid-cols-3 gap-4 border-t border-border pt-4"><Metric label="Confidence" value={`${Math.round(result.diagnosis.confidence * 100)}%`} /><Metric label="Duration" value={`${Math.round(result.duration_ms)} ms`} /><Metric label="Provider" value={result.provider} /></div></div></div> : <EmptyState icon={Search} title="No investigation result yet" description="Run an investigation to inspect the diagnosis, supporting evidence, and recommended action." />}
+      {result ? <div className="rounded-lg border border-border bg-card p-5 shadow-sm"><div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs text-muted-foreground">{activeScenario?.title || result.scenario_id}</p><h2 className="mt-1 text-base font-semibold">Investigation result</h2></div><span className={cn('inline-flex items-center gap-1 text-sm font-medium', result.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>{result.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}{result.passed ? 'Passed' : 'Needs review'}</span></div><div className="space-y-4"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Root cause</p><p className="mt-1 text-sm leading-6">{result.diagnosis.root_cause}</p></div><div><p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Evidence</p><div className="space-y-2">{result.diagnosis.evidence_ids.length ? result.diagnosis.evidence_ids.map((item, index) => { const evidence = evidenceById.get(item); return <div key={`${item}-${index}`} className="rounded-md bg-muted/40 px-3 py-2.5"><div className="flex gap-3"><span className="shrink-0 pt-0.5 font-mono text-xs text-muted-foreground">{item}</span><p className="text-sm leading-5">{evidence?.content || 'Evidence unavailable for this ID.'}</p></div>{evidence && <p className="mt-1 pl-[4.25rem] text-[11px] text-muted-foreground">{evidence.source} · {evidence.kind}</p>}</div> }) : <p className="text-sm text-muted-foreground">No evidence IDs returned.</p>}</div></div><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Recommended action</p><p className="mt-1 text-sm leading-6">{result.diagnosis.recommended_action}</p></div><div className="grid grid-cols-3 gap-3 border-t border-border pt-4"><Metric label="Confidence" value={`${Math.round(result.diagnosis.confidence * 100)}%`} /><Metric label="Duration" value={`${Math.round(result.duration_ms)} ms`} /><Metric label="Provider" value={result.provider} /></div></div></div> : <EmptyState icon={Search} title="No investigation result yet" description="Run an investigation to inspect the diagnosis, supporting evidence, and recommended action." />}
     </section>
 
     <section className="grid gap-4 lg:grid-cols-2">
-      <ChartCard title="Confidence over runs" description="Observed confidence for the most recent investigations."><LineChartWidget data={chartRuns} xKey="run" series={[{ key: 'confidence', color: 'hsl(var(--primary))', label: 'Confidence' }]} valueSuffix="%" height={220} /></ChartCard>
-      <ChartCard title="Investigations by scenario" description="Coverage of the configured incident scenarios."><BarChartWidget data={scenarioCounts} xKey="scenario" series={[{ key: 'runs', color: 'hsl(var(--primary))', label: 'Runs' }]} height={220} /></ChartCard>
+      <ChartCard title="Confidence over runs" description="Observed confidence for the most recent investigations."><LineChartWidget data={chartRuns} xKey="run" series={[{ key: 'confidence', color: 'hsl(var(--primary))', label: 'Confidence' }]} valueSuffix="%" height={210} /></ChartCard>
+      <ChartCard title="Investigations by scenario" description="Coverage of the configured incident scenarios."><BarChartWidget data={scenarioCounts} xKey="scenario" series={[{ key: 'runs', color: 'hsl(var(--primary))', label: 'Runs' }]} height={210} /></ChartCard>
     </section>
 
-    <ChartCard title="Investigation duration" description="Latency across the most recent runs."><AreaChartWidget data={chartRuns} xKey="run" series={[{ key: 'duration', color: 'hsl(var(--primary))', label: 'Duration' }]} valueSuffix=" ms" height={210} /></ChartCard>
+    <ChartCard title="Investigation duration" description="Latency across the most recent runs."><AreaChartWidget data={chartRuns} xKey="run" series={[{ key: 'duration', color: 'hsl(var(--primary))', label: 'Duration' }]} valueSuffix=" ms" height={200} /></ChartCard>
   </div>
 }
 
