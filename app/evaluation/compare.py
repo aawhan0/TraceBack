@@ -29,5 +29,5 @@ def compare_evaluations(
     )
 
 
-# Backwards-compatible exports for callers using the comparison module directly.
-from app.evaluation.comparison import IncompatibleBenchmarkError
+# Compatibility exports keep the original comparison module as a stable import surface.
+from app.evaluation.comparison import IncompatibleBenchmarkError, compare_experiments
