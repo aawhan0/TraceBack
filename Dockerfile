@@ -11,7 +11,9 @@ COPY pyproject.toml README.md ./
 COPY app ./app
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir .
+    && python -m pip install --no-cache-dir . \
+    && python -m pip check \
+    && rm -rf /root/.cache/pip /tmp/pip-*
 
 RUN useradd --create-home --uid 10001 traceback \
     && mkdir -p /data \
