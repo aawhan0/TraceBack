@@ -13,6 +13,8 @@ class Settings:
     environment: str = "development"
     log_level: str = "INFO"
     request_id_header: str = "X-Request-ID"
+    rate_limit_requests: int = 120
+    rate_limit_window_seconds: float = 60.0
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -30,6 +32,8 @@ class Settings:
             environment=os.getenv("TRACEBACK_ENVIRONMENT", "development").strip().lower(),
             log_level=os.getenv("TRACEBACK_LOG_LEVEL", "INFO").strip().upper(),
             request_id_header=os.getenv("TRACEBACK_REQUEST_ID_HEADER", "X-Request-ID").strip(),
+            rate_limit_requests=int(os.getenv("TRACEBACK_RATE_LIMIT_REQUESTS", "120")),
+            rate_limit_window_seconds=float(os.getenv("TRACEBACK_RATE_LIMIT_WINDOW_SECONDS", "60")),
         )
         settings.validate()
         return settings
@@ -43,6 +47,10 @@ class Settings:
             raise ValueError("TRACEBACK_ENVIRONMENT must be development, test, or production")
         if self.log_level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             raise ValueError("TRACEBACK_LOG_LEVEL is invalid")
+        if self.rate_limit_requests <= 0:
+            raise ValueError("TRACEBACK_RATE_LIMIT_REQUESTS must be positive")
+        if self.rate_limit_window_seconds <= 0:
+            raise ValueError("TRACEBACK_RATE_LIMIT_WINDOW_SECONDS must be positive")
         if not self.request_id_header:
             raise ValueError("TRACEBACK_REQUEST_ID_HEADER cannot be empty")
         parsed = urlparse(self.ollama_base_url)

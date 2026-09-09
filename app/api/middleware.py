@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.observability.audit import AuditEvent, AuditLog
+from app.services.request_validation import validate_request_id
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -19,6 +20,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id = request.headers.get("X-Request-ID") or str(uuid4())
+        try:
+            request_id = validate_request_id(request_id)
+        except ValueError:
+            request_id = str(uuid4())
         started = perf_counter()
         request.state.request_id = request_id
 
