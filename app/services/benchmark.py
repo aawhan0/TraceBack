@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 from uuid import uuid4
 
+from app.agent.baseline import BaselineInvestigator
+from app.agent.llm import LLMInvestigator
 from app.evaluation.dataset import DatasetManifest
 from app.evaluation.experiments import ExperimentResult, ExperimentRunner, ExperimentSpec
 from app.evaluation.provenance import BenchmarkProvenance
@@ -12,8 +15,10 @@ from app.evaluation.regression import (
     evaluate_regression,
     metrics_from_experiment,
 )
+from app.config import Settings
 from app.models.domain import IncidentScenario
 from app.observability.events import TraceContext, TraceSpan
+from app.providers.ollama import OllamaProvider
 from app.repository.experiments import ExperimentRecord, ExperimentStore, SQLiteExperimentStore
 from app.repository.runs import utc_now
 from app.services.investigation import InvestigationService
@@ -27,7 +32,7 @@ class BenchmarkRequest:
     dataset: DatasetManifest
     repetitions: int = 1
     policy: RegressionPolicy = RegressionPolicy()
-    provider: str = "baseline"
+    mode: Literal["baseline", "llm"] = "baseline"
     model: str | None = None
 
     def __post_init__(self) -> None:
@@ -35,16 +40,15 @@ class BenchmarkRequest:
             raise ValueError("benchmark name is required")
         if self.repetitions < 1 or self.repetitions > 100:
             raise ValueError("repetitions must be between 1 and 100")
-        if not self.provider.strip():
-            raise ValueError("benchmark provider is required")
-        if self.provider == "baseline" and self.model is not None:
+        if self.mode == "baseline" and self.model is not None:
             raise ValueError("baseline benchmarks cannot declare a model")
-        if self.provider != "baseline" and not (self.model or "").strip():
-            raise ValueError("non-baseline benchmarks require a model")
+        if self.mode == "llm" and not (self.model or "").strip():
+            raise ValueError("LLM benchmarks require a model")
 
     def provenance(self) -> BenchmarkProvenance:
+        settings = Settings.from_environment()
         return BenchmarkProvenance.from_environment(
-            provider=self.provider,
+            provider="baseline" if self.mode == "baseline" else "ollama",
             model=self.model,
         )
 
@@ -87,17 +91,19 @@ class BenchmarkService:
         )
         runner = ExperimentRunner(self.investigation_service)
         provenance = request.provenance()
+        investigator_factory = self._investigator_factory(request)
         with TraceSpan(
             context,
             "benchmark",
             benchmark=request.name,
             dataset=request.dataset.name,
             version=request.dataset.version,
+            mode=request.mode,
             provider=provenance.provider,
             model=provenance.model or "",
             git_revision=provenance.git_revision,
         ):
-            result = runner.run(spec, catalog)
+            result = runner.run(spec, catalog, investigator_factory=investigator_factory)
             metrics = metrics_from_experiment(result)
             regression = evaluate_regression(
                 metrics,
@@ -127,6 +133,19 @@ class BenchmarkService:
             dataset_fingerprint=request.dataset.fingerprint,
             provenance=provenance,
         )
+
+    @staticmethod
+    def _investigator_factory(request: BenchmarkRequest):
+        if request.mode == "baseline":
+            return lambda scenario: BaselineInvestigator(scenario)
+
+        settings = Settings.from_environment()
+        provider = OllamaProvider(
+            model=request.model or settings.model,
+            base_url=settings.ollama_base_url,
+            timeout=settings.ollama_timeout,
+        )
+        return lambda scenario: LLMInvestigator(scenario, provider)
 
     def get(self, experiment_id: str) -> ExperimentRecord | None:
         return self.experiment_store.get(experiment_id)
