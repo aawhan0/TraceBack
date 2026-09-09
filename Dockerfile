@@ -12,7 +12,11 @@ COPY app ./app
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir . \
-    && python -m pip install --no-cache-dir --upgrade --force-reinstall "setuptools>=78.1.1" "msgpack>=1.2.1,<2"
+    && python -m pip install --no-cache-dir --upgrade --force-reinstall "setuptools>=78.1.1" "msgpack>=1.2.1,<2" \
+    && python -m pip check \
+    && rm -rf /root/.cache/pip \
+    && find /usr/local/lib/python3.12/site-packages -type d -name '__pycache__' -prune -exec rm -rf {} + \
+    && python -c "import msgpack, setuptools; assert tuple(map(int, msgpack.__version__.split('.')[:2])) >= (1, 2); assert tuple(map(int, setuptools.__version__.split('.')[:2])) >= (78, 1)"
 
 RUN useradd --create-home --uid 10001 traceback \
     && mkdir -p /data \
