@@ -1,7 +1,8 @@
 import pytest
 
 from app.evaluation.dataset import build_manifest
-from app.evaluation.regression import RegressionPolicy
+from app.evaluation.experiments import ExperimentResult
+from app.evaluation.regression import RegressionFailure, RegressionPolicy, RegressionReport
 from app.models.domain import Diagnosis
 from app.observability.events import InMemoryEventSink, TraceContext
 from app.repository.experiments import SQLiteExperimentStore
@@ -9,6 +10,7 @@ from app.repository.runs import SQLiteRunStore
 from app.scenarios.catalog import SCENARIOS
 from app.services.benchmark import (
     BenchmarkRequest,
+    BenchmarkResult,
     BenchmarkService,
     assert_regression,
     default_dataset,
@@ -89,20 +91,27 @@ def test_assert_regression_returns_successful_result(tmp_path) -> None:
     assert assert_regression(result) is result
 
 
-def test_assert_regression_raises_on_failed_gate(tmp_path) -> None:
-    catalog = {scenario.id: scenario for scenario in SCENARIOS}
-    service = BenchmarkService(
-        InMemoryRunService(SQLiteRunStore(str(tmp_path / "runs.db"))),
-        SQLiteExperimentStore(str(tmp_path / "experiments.db")),
-    )
-    dataset = build_manifest("smoke", "1", SCENARIOS[:1])
-    result = service.run(
-        BenchmarkRequest(
-            "smoke",
-            dataset,
-            policy=RegressionPolicy(minimum_pass_rate=1.0),
+def test_assert_regression_raises_on_failed_gate() -> None:
+    result = BenchmarkResult(
+        experiment_id="exp-1",
+        result=ExperimentResult("smoke", 1, 0, 0.0, 0.2, 10.0, {"db": 0.0}),
+        regression=RegressionReport(
+            passed=False,
+            failures=(
+                RegressionFailure(
+                    "pass_rate",
+                    0.0,
+                    1.0,
+                    "min",
+                    "below threshold",
+                ),
+            ),
+            pass_rate_interval_lower=0.0,
+            pass_rate_interval_upper=0.0,
         ),
-        catalog,
+        dataset_name="core",
+        dataset_version="1",
+        dataset_fingerprint="abc",
     )
-    assert result.regression.passed
-    assert assert_regression(result) is result
+    with pytest.raises(RuntimeError, match="regression gate failed"):
+        assert_regression(result)
