@@ -42,3 +42,51 @@ class ExperimentResponse(BaseModel):
     average_confidence: float
     average_duration_ms: float
     scenario_pass_rates: dict[str, float]
+
+
+class RegressionFailureResponse(BaseModel):
+    metric: str
+    actual: float
+    expected: float
+    direction: str
+    message: str
+
+
+class BenchmarkResponse(BaseModel):
+    experiment_id: str
+    name: str
+    dataset_name: str
+    dataset_version: str
+    dataset_fingerprint: str
+    total_runs: int
+    passed_runs: int
+    pass_rate: float
+    average_confidence: float
+    average_duration_ms: float
+    scenario_pass_rates: dict[str, float]
+    regression_passed: bool
+    regression_failures: list[RegressionFailureResponse]
+    pass_rate_interval_lower: float
+    pass_rate_interval_upper: float
+
+
+class ExperimentSummaryResponse(BaseModel):
+    experiment_id: str
+    name: str
+    dataset_name: str
+    dataset_version: str
+    dataset_fingerprint: str
+    created_at: datetime
+    total_runs: int
+    passed_runs: int
+    pass_rate: float
+    regression_passed: bool | None
+
+
+class DatasetResponse(BaseModel):
+    name: str
+    version: str
+    description: str
+    fingerprint: str
+    case_count: int
+    scenario_ids: list[str]
