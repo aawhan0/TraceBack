@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import (
+    BenchmarkProvenanceResponse,
     BenchmarkResponse,
     DatasetResponse,
     ExperimentRequest,
@@ -79,7 +80,6 @@ def investigate(request: InvestigationRequest) -> InvestigationResponse:
     )
 
 
-
 def _run_store() -> SQLiteRunStore:
     return SQLiteRunStore(Settings.from_environment().database_path)
 
@@ -105,6 +105,12 @@ def get_run(run_id: str) -> InvestigationRun:
     return run
 
 
+def _provenance_response(provenance):
+    if provenance is None:
+        return None
+    return BenchmarkProvenanceResponse(**provenance.as_dict())
+
+
 @router.post("/experiments", response_model=BenchmarkResponse, tags=["experiments"])
 def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
     catalog = {scenario.id: scenario for scenario in SCENARIOS}
@@ -116,7 +122,13 @@ def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
         )
         benchmark = BenchmarkService()
         result = benchmark.run(
-            BenchmarkRequest(request.name, dataset, request.repetitions),
+            BenchmarkRequest(
+                request.name,
+                dataset,
+                request.repetitions,
+                mode=request.mode,
+                model=request.model,
+            ),
             catalog,
         )
     except KeyError as exc:
@@ -149,6 +161,7 @@ def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
         ],
         pass_rate_interval_lower=result.regression.pass_rate_interval_lower,
         pass_rate_interval_upper=result.regression.pass_rate_interval_upper,
+        provenance=_provenance_response(result.provenance),
     )
 
 
@@ -170,6 +183,7 @@ def list_experiments(limit: int = 50) -> list[ExperimentSummaryResponse]:
             passed_runs=record.result.passed_runs,
             pass_rate=record.result.pass_rate,
             regression_passed=record.regression.passed if record.regression else None,
+            provenance=_provenance_response(record.provenance),
         )
         for record in records
     ]
@@ -207,6 +221,7 @@ def get_experiment(experiment_id: str) -> BenchmarkResponse:
         ],
         pass_rate_interval_lower=regression.pass_rate_interval_lower if regression else 0.0,
         pass_rate_interval_upper=regression.pass_rate_interval_upper if regression else 0.0,
+        provenance=_provenance_response(record.provenance),
     )
 
 
