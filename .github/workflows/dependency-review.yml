@@ -1,0 +1,52 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: ["main"]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check dependency graph availability
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${GITHUB_REPOSITORY}" \
+            --jq '.security_and_analysis.dependency_graph.status // "unknown"')
+          echo "Dependency graph status: $status"
+          if [ "$status" != "enabled" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dependency review
+        if: steps.graph.outputs.enabled == 'true'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          retry-on-snapshot-warnings: true
+          retry-on-snapshot-warnings-timeout: 30
+
+      - name: Report dependency graph requirement
+        if: steps.graph.outputs.enabled != 'true'
+        run: |
+          echo "::warning title=Dependency Review unavailable::GitHub Dependency Graph is not enabled for this repository. Enable it under Settings > Security & quality > Advanced Security, then this gate will activate."
