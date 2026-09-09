@@ -493,3 +493,9 @@ docker compose up --build -d
 ```
 
 The Compose deployment uses the production image and persists SQLite state in a named volume. See [docs/deployment.md](docs/deployment.md).
+
+## Container releases
+
+Versioned production container images are published to GitHub Container Registry from explicit semantic-version tags. The release boundary is separate from pull-request CI: CI validates changes, while a release tag publishes the immutable application image.
+
+See [docs/release.md](docs/release.md) for the release flow and deployment contract.
