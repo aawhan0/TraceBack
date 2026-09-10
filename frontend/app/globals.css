@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,7 +12,7 @@
     --card-foreground: 222 25% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 25% 12%;
-    --primary: 217 91% 46%;
+    --primary: 231 80% 58%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 16% 93%;
     --secondary-foreground: 222 20% 28%;
@@ -24,7 +24,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 14% 88%;
     --input: 220 14% 88%;
-    --ring: 217 91% 46%;
+    --ring: 231 80% 58%;
     --radius: 0.5rem;
   }
   .dark {
@@ -34,22 +34,42 @@
     --card-foreground: 220 16% 92%;
     --popover: 222 22% 12%;
     --popover-foreground: 220 16% 92%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 231 88% 70%;
+    --primary-foreground: 222 25% 10%;
     --secondary: 222 16% 18%;
     --secondary-foreground: 220 14% 72%;
     --muted: 222 16% 16%;
-    --muted-foreground: 220 10% 50%;
+    --muted-foreground: 220 10% 55%;
     --accent: 222 16% 20%;
     --accent-foreground: 220 14% 88%;
     --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 100%;
     --border: 222 16% 20%;
     --input: 222 16% 20%;
-    --ring: 217 91% 60%;
+    --ring: 231 88% 70%;
   }
   *, *::before, *::after { @apply border-border box-border; }
   html { @apply scroll-smooth; }
-  body { @apply bg-background text-foreground antialiased; font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; line-height: 1.5; }
-  h1, h2, h3, h4, h5, h6 { line-height: 1.2; font-weight: 600; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.45;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.18;
+    font-weight: 600;
+  }
+  button, input, textarea, select { font: inherit; }
+  code, pre { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+}
+
+@layer utilities {
+  .font-montserrat { font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  /* Keep dense dashboard screens readable at 100% zoom without unnecessary scrolling. */
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.875rem; }
+  .pb-10 { padding-bottom: 1.5rem; }
 }
