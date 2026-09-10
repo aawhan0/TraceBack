@@ -65,6 +65,9 @@ def test_benchmark_service_persists_result(tmp_path) -> None:
 
     assert result.result.total_runs == 4
     assert result.result.pass_rate == 1.0
+    assert result.result.root_cause_accuracy == 1.0
+    assert result.result.average_evidence_recall == 1.0
+    assert result.result.average_evidence_precision == 1.0
     assert result.regression.passed
     assert experiment_store.get(result.experiment_id) is not None
     assert result.provenance is not None
@@ -99,7 +102,7 @@ def test_assert_regression_returns_successful_result(tmp_path) -> None:
 def test_assert_regression_raises_on_failed_gate() -> None:
     result = BenchmarkResult(
         experiment_id="exp-1",
-        result=ExperimentResult("smoke", 1, 0, 0.0, 0.2, 10.0, {"db": 0.0}),
+        result=ExperimentResult("smoke", 1, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, {"db": 0.0}),
         regression=RegressionReport(
             passed=False,
             failures=(
