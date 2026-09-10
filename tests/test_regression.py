@@ -114,12 +114,25 @@ def test_invalid_latency_and_confidence_thresholds_are_rejected() -> None:
 
 
 def test_metrics_adapter_preserves_experiment_values() -> None:
-    result = ExperimentResult("x", 2, 1, 0.5, 0.7, 123, {"a": 0.5})
+    result = ExperimentResult(
+        "x",
+        2,
+        1,
+        0.5,
+        0.5,
+        0.9,
+        0.85,
+        0.7,
+        123,
+        {"a": 0.5},
+    )
     adapted = metrics_from_experiment(result)
     assert adapted.pass_rate == 0.5
     assert adapted.average_confidence == 0.7
     assert adapted.average_duration_ms == 123
     assert adapted.root_cause_accuracy == 0.5
+    assert adapted.evidence_recall == 0.9
+    assert adapted.evidence_precision == 0.85
     assert adapted.scenario_pass_rates == {"a": 0.5}
 
 
