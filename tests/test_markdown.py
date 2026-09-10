@@ -9,6 +9,9 @@ def result(name: str, rate: float) -> ExperimentResult:
         total_runs=10,
         passed_runs=int(rate * 10),
         pass_rate=rate,
+        root_cause_accuracy=rate,
+        average_evidence_recall=0.9,
+        average_evidence_precision=0.95,
         average_confidence=0.8,
         average_duration_ms=100.0,
         scenario_pass_rates={"db": rate},
@@ -19,6 +22,9 @@ def test_experiment_markdown_contains_metrics() -> None:
     report = render_experiment_markdown(result("smoke", 1.0))
     assert "# Experiment: smoke" in report
     assert "| Pass rate | 100.00% |" in report
+    assert "| Root-cause accuracy | 100.00% |" in report
+    assert "| Average evidence recall | 90.00% |" in report
+    assert "| Average evidence precision | 95.00% |" in report
     assert "| db | 100.00% |" in report
 
 
@@ -34,6 +40,7 @@ def test_experiment_markdown_contains_regression_failures() -> None:
     report = render_experiment_markdown(result("smoke", 0.5), regression)
     assert "**Status:** FAIL" in report
     assert "| pass_rate | 0.5000 | 1.0000 |" in report
+    assert "| Pass-rate Wilson interval | 20.00% – 80.00% |" in report
 
 
 def test_experiment_markdown_reports_successful_gate() -> None:
@@ -46,6 +53,8 @@ def test_experiment_markdown_reports_successful_gate() -> None:
 def test_comparison_markdown_shows_deltas() -> None:
     report = render_comparison_markdown(result("base", 0.8), result("candidate", 1.0))
     assert "# Experiment comparison" in report
+    assert "| Root-cause accuracy | 80.00% | 100.00% | +20.00% |" in report
+    assert "| Evidence recall | 90.00% | 90.00% | +0.00% |" in report
     assert "+20.00%" in report
 
 
