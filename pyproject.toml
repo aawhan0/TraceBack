@@ -9,7 +9,7 @@ description = "LLM-assisted incident investigation and deterministic evaluation.
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [
-  { name = "Aawhan Vyas" },
+  { name = "Aawhan Vyas", email = "vyasaawhan@gmail.com" },
 ]
 license = { file = "LICENSE" }
 keywords = ["llm", "incident-response", "root-cause-analysis", "evaluation", "mcp"]
