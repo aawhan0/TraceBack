@@ -77,9 +77,10 @@ class MatrixResponse(BaseModel):
     matrix_id: str
     dataset_name: str
     dataset_version: str
-    fingerprint: str
-    case_count: int
-    scenario_ids: list[str]
+    dataset_fingerprint: str
+    experiment_ids: list[str]
+    best_experiment_id: str
+    comparisons: list[dict[str, object]]
 
 
 class ExperimentRequest(BaseModel):
@@ -145,6 +146,7 @@ class ExperimentSummaryResponse(BaseModel):
     created_at: datetime
     total_runs: int
     passed_runs: int
+    pass_rate: float
     regression_passed: bool | None
     provenance: BenchmarkProvenanceResponse | None = None
 
