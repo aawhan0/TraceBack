@@ -28,6 +28,9 @@ class ExperimentResult:
     total_runs: int
     passed_runs: int
     pass_rate: float
+    root_cause_accuracy: float
+    average_evidence_recall: float
+    average_evidence_precision: float
     average_confidence: float
     average_duration_ms: float
     scenario_pass_rates: dict[str, float]
@@ -88,6 +91,9 @@ def summarize_experiment(name: str, results: list[InvestigationResult]) -> Exper
         total_runs=total,
         passed_runs=passed,
         pass_rate=passed / total,
+        root_cause_accuracy=fmean(result.evaluation.root_cause_match for result in results),
+        average_evidence_recall=fmean(result.evaluation.evidence_recall for result in results),
+        average_evidence_precision=fmean(result.evaluation.evidence_precision for result in results),
         average_confidence=fmean(result.diagnosis.confidence for result in results),
         average_duration_ms=fmean(result.duration_ms for result in results),
         scenario_pass_rates={
@@ -101,6 +107,9 @@ def compare_experiments(
 ) -> dict[str, float]:
     return {
         "pass_rate_delta": candidate.pass_rate - baseline.pass_rate,
+        "root_cause_accuracy_delta": candidate.root_cause_accuracy - baseline.root_cause_accuracy,
+        "evidence_recall_delta": candidate.average_evidence_recall - baseline.average_evidence_recall,
+        "evidence_precision_delta": candidate.average_evidence_precision - baseline.average_evidence_precision,
         "average_confidence_delta": candidate.average_confidence - baseline.average_confidence,
         "average_duration_ms_delta": candidate.average_duration_ms - baseline.average_duration_ms,
     }
