@@ -96,6 +96,9 @@ class ExperimentResponse(BaseModel):
     total_runs: int
     passed_runs: int
     pass_rate: float
+    root_cause_accuracy: float
+    average_evidence_recall: float
+    average_evidence_precision: float
     average_confidence: float
     average_duration_ms: float
     scenario_pass_rates: dict[str, float]
@@ -127,6 +130,9 @@ class BenchmarkResponse(BaseModel):
     total_runs: int
     passed_runs: int
     pass_rate: float
+    root_cause_accuracy: float
+    average_evidence_recall: float
+    average_evidence_precision: float
     average_confidence: float
     average_duration_ms: float
     scenario_pass_rates: dict[str, float]
