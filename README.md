@@ -34,7 +34,9 @@ This makes model behavior measurable rather than purely subjective.
 - **Repeatable experiments** across scenarios and repetitions
 - **Regression gates** for protecting measured investigation quality
 - **Custom scenario authoring** with persisted ground truth and evidence
+- **Custom MCP evidence sources** through a constrained remote-source contract
 - **Model Playground** for interactive baseline vs. Ollama investigation runs
+- **Incident Knowledge Base** for deterministic search across known failure patterns and latest run state
 - **Local-first inference** using Ollama
 - **Provider-agnostic LLM boundary** so inference can be replaced without redesigning the system
 - **FastAPI backend** for exposing the system as a real service
@@ -168,11 +170,23 @@ traceback investigate database-pool-exhaustion
 
 Baseline investigation does not require an LLM runtime.
 
-The dashboard's investigation, experiments, playground, and history views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
+The dashboard's investigation, experiments, playground, history, reports, scenarios, evaluation, comparison, and knowledge views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
 
 ### 6. Try the Model Playground
 
 Open **Playground** in the dashboard to select a built-in or custom scenario, choose an Ollama model, and compare a deterministic baseline run with an LLM-backed run. The result panel exposes the same diagnosis, evidence, evaluation outcome, latency, and run ID used elsewhere in Traceback.
+
+### 7. Search the Incident Knowledge Base
+
+Open **Knowledge Base** to search reusable incident patterns. Results are derived from the same scenario catalog used by investigations, including custom scenarios, and show expected root cause, evidence requirements, and the latest persisted evaluation state.
+
+The backend endpoint is:
+
+```text
+GET /knowledge?q=<query>&limit=<1-50>
+```
+
+Search is deterministic; it is deliberately not an LLM-generated knowledge or retrieval system.
 
 ## Custom scenarios
 
@@ -185,7 +199,13 @@ Use the **Scenarios** view in the dashboard to author a reusable incident case. 
 - one or more evidence items with source, kind, ID, and content
 - optional required evidence IDs for recall evaluation
 
-Custom scenarios are persisted in the same SQLite database as the rest of Traceback. They are returned by `GET /scenarios`, can be investigated through `POST /investigations`, and can participate in experiments and matrices without changing the investigation engine.
+Custom scenarios are persisted in the same SQLite database as the rest of Traceback. They are returned by `GET /scenarios`, can be investigated through `POST /investigations`, and can participate in experiments, matrices, and the Knowledge Base without changing the investigation engine.
+
+## Custom MCP evidence sources
+
+Traceback can connect to configured remote MCP evidence sources through `TRACEBACK_MCP_EVIDENCE_SOURCES`. The integration uses a strict structured evidence contract and preserves external-source attribution rather than silently mixing external data into built-in evidence.
+
+See [docs/mcp-evidence-sources.md](docs/mcp-evidence-sources.md) for configuration and the expected MCP tool contract.
 
 ## LLM development
 
@@ -276,6 +296,7 @@ Core endpoints include:
 - `GET /experiments/{experiment_id}`
 - `GET /experiments/{baseline_id}/compare/{candidate_id}`
 - `POST /experiments/matrix`
+- `GET /knowledge?q=<query>&limit=<1-50>`
 - `POST /jobs`
 - `GET /jobs`
 - `GET /jobs/{job_id}`
@@ -349,15 +370,15 @@ Traceback/
 ├── .github/workflows/     # CI, security, dependency and release workflows
 ├── app/
 │   ├── agent/             # investigators, LLM/provider boundary, runtime
-│   ├── api/               # FastAPI routes and web/API integration
+│   ├── api/               # FastAPI routes, including knowledge search
 │   ├── evaluation/        # metrics, regression, comparison, benchmarking
-│   ├── mcp/               # MCP evidence server
-│   ├── models/            # domain contracts
+│   ├── mcp/               # MCP evidence server and external-source integration
+│   ├── models/             # domain contracts
 │   ├── observability/     # telemetry and metrics
 │   ├── providers/         # LLM providers
 │   ├── repository/        # SQLite persistence
 │   ├── scenarios/         # built-in and persisted incident scenarios
-│   ├── services/          # application orchestration
+│   ├── services/           # application orchestration
 │   └── tools/             # constrained investigation tools
 ├── frontend/              # Next.js investigation dashboard
 ├── docs/                  # architecture and operational contracts
@@ -390,7 +411,7 @@ Traceback complements rather than duplicates the rest of the portfolio:
 
 ## Status
 
-The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, and functional Next.js web UI are implemented. The project is now in final local validation and portfolio-polish mode.
+The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, model playground, custom MCP evidence sources, incident knowledge base, and functional Next.js web UI are implemented. The project is now in final local validation and portfolio-polish mode.
 
 ## Author
 
