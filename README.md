@@ -47,38 +47,25 @@ This makes model behavior measurable rather than purely subjective.
 
 ## Architecture
 
-```text
-Incident
-   │
-   ▼
-Investigation Agent
-   │
-   ├── MCP tools ──► Operational Evidence
-   │                       │
-   └───────────────────────┘
-               │
-               ▼
-       Structured Diagnosis
-               │
-               ├── Root cause
-               ├── Evidence IDs
-               ├── Confidence
-               └── Recommended action
-               │
-               ▼
-       Deterministic Evaluator
-               │
-               ├── Root-cause match
-               ├── Evidence recall
-               ├── Evidence precision
-               ├── Confidence validity
-               └── Action presence
-               │
-               ▼
-         Evaluation Report
+```mermaid
+flowchart TD
+    A[Production-like Incident] --> B[Investigation Service]
+    B --> C{Choose Investigator}
+    C --> D[Deterministic Baseline]
+    C --> E[LLM Investigator]
+    E --> F[Provider / Ollama]
+    D --> G[MCP Tools]
+    F --> G
+    G --> H[Operational Evidence]
+    H --> I[Structured Diagnosis]
+    I --> J[Deterministic Evaluator]
+    J --> K[Measured Result]
+    K --> L[Persisted Run]
+    L --> M[Experiments & Reports]
+    M --> N[TraceBack Dashboard]
 ```
 
-The key engineering boundary is between **generation** and **evaluation**: the LLM proposes a diagnosis, while deterministic code decides whether that diagnosis satisfies the scenario's measurable criteria.
+The key engineering boundary is simple: **the investigator generates a diagnosis; deterministic code evaluates it.**
 
 See [docs/architecture.md](docs/architecture.md) for the detailed architecture notes.
 
@@ -108,6 +95,75 @@ The dashboard can also create **custom scenarios** with an incident description,
 | CI/CD | GitHub Actions |
 | Containers | Docker / Docker Compose |
 | Package / CLI | PyPI (`trbk`) |
+
+## Evaluation and Benchmarking
+
+For each investigation, TraceBack evaluates root-cause match, evidence recall, evidence precision, confidence validity, action presence, and overall pass/fail.
+
+```mermaid
+flowchart LR
+    A[Investigation Result] --> B[Root Cause Check]
+    A --> C[Evidence Recall]
+    A --> D[Evidence Precision]
+    A --> E[Confidence Check]
+    A --> F[Action Check]
+    B --> G[Pass / Fail]
+    C --> G
+    D --> G
+    E --> G
+    F --> G
+```
+
+Benchmarking repeats the same evaluation across scenarios and repetitions, persists provenance, and supports regression gates and experiment comparisons.
+
+```mermaid
+flowchart LR
+    A[Scenarios] --> B[Benchmark Run]
+    B --> C[Repeat Investigations]
+    C --> D[Deterministic Evaluation]
+    D --> E[Experiment Result]
+    E --> F[Statistics]
+    E --> G[Regression Gate]
+    E --> H[Baseline vs Candidate]
+    F --> I[Report]
+    G --> I
+    H --> I
+```
+
+### Final local benchmark snapshot
+
+The final 10-repetition benchmark used the three built-in scenarios, giving **30 investigation runs per configuration**.
+
+| Metric | Deterministic baseline | Qwen 2.5 3B |
+| --- | ---: | ---: |
+| Runs | 30 | 30 |
+| Pass rate | **100.00%** | 10.00% |
+| Root-cause accuracy | **100.00%** | 10.00% |
+| Average confidence | 75.0% | **90.0%** |
+| Average duration | **0.09 ms** | 2289.78 ms |
+| Database pool exhaustion | 100.00% | 10.00% |
+| Redis connectivity failure | 100.00% | 0.00% |
+| Runaway worker CPU | 100.00% | 20.00% |
+
+```mermaid
+xychart-beta
+    title "Final Benchmark Pass Rate"
+    x-axis ["Baseline", "Qwen 2.5 3B"]
+    y-axis "Pass Rate (%)" 0 --> 100
+    bar [100, 10]
+```
+
+```mermaid
+xychart-beta
+    title "Final Benchmark Root-Cause Accuracy"
+    x-axis ["Baseline", "Qwen 2.5 3B"]
+    y-axis "Accuracy (%)" 0 --> 100
+    bar [100, 10]
+```
+
+The baseline regression gate passed. The Qwen experiment failed the configured 100% pass-rate/root-cause threshold, which is intentional: TraceBack is designed to surface model reliability gaps rather than hide them.
+
+> These figures are a local benchmark snapshot, not a claim of general model capability. Hardware, model version, Ollama configuration, prompts, scenario definitions, and repetitions can change the observed results.
 
 ## Install from PyPI
 
@@ -199,14 +255,7 @@ GET /knowledge?q=<query>&limit=<1-50>
 
 ## Custom Scenarios
 
-Use the **Scenarios** view to author a reusable incident case. Each custom scenario stores:
-
-- a stable scenario ID and incident title
-- a production-style incident description
-- the expected root cause
-- causal keywords used by deterministic evaluation
-- one or more evidence items with source, kind, ID, and content
-- optional required evidence IDs for recall evaluation
+Use the **Scenarios** view to author a reusable incident case. Each custom scenario stores a stable scenario ID and incident title, a production-style incident description, the expected root cause, causal keywords, one or more evidence items, and optional required evidence IDs for recall evaluation.
 
 Custom scenarios are persisted in the same SQLite database as the rest of TraceBack and can participate in investigations, experiments, matrices, and the Knowledge Base.
 
@@ -217,53 +266,6 @@ TraceBack can connect to configured remote MCP evidence sources through `TRACEBA
 The integration uses a strict structured evidence contract and preserves external-source attribution rather than silently mixing external data into built-in evidence.
 
 See [docs/mcp-evidence-sources.md](docs/mcp-evidence-sources.md) for configuration and the expected MCP tool contract.
-
-## Evaluation and Benchmarking
-
-For each investigation, TraceBack evaluates:
-
-| Metric | What it measures |
-| --- | --- |
-| Root-cause match | Whether the diagnosis contains the required causal keywords |
-| Evidence recall | How much required evidence was selected |
-| Evidence precision | How much selected evidence is valid for the scenario |
-| Confidence validity | Whether the reported confidence is valid and observable |
-| Action present | Whether a recommended action was produced |
-| Pass/fail | Whether the diagnosis satisfies the scenario's acceptance criteria |
-
-Benchmarking adds repeated runs, pass rates, root-cause accuracy, evidence recall and precision, confidence and latency statistics, Wilson pass-rate intervals, regression gates, persisted experiment provenance, experiment comparison, and multi-configuration matrices.
-
-### Final local benchmark snapshot
-
-The final 10-repetition benchmark used the three built-in scenarios, giving **30 investigation runs per configuration**.
-
-| Metric | Deterministic baseline | Qwen 2.5 3B |
-| --- | ---: | ---: |
-| Runs | 30 | 30 |
-| Pass rate | **100.00%** | 10.00% |
-| Root-cause accuracy | **100.00%** | 10.00% |
-| Average confidence | 75.0% | **90.0%** |
-| Average duration | **0.09 ms** | 2289.78 ms |
-| Database pool exhaustion | 100.00% | 10.00% |
-| Redis connectivity failure | 100.00% | 0.00% |
-| Runaway worker CPU | 100.00% | 20.00% |
-
-The baseline regression gate passed. The Qwen experiment failed the configured 100% pass-rate/root-cause threshold, which is intentional: TraceBack is designed to surface model reliability gaps rather than hide them.
-
-> These figures are a local benchmark snapshot, not a claim of general model capability. Hardware, model version, Ollama configuration, prompts, scenario definitions, and repetitions can change the observed results.
-
-Typical commands:
-
-```powershell
-trbk benchmark --mode baseline --repetitions 3 --name baseline-smoke
-trbk benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
-trbk compare <baseline-experiment-id> <candidate-experiment-id>
-trbk matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2 --repetitions 3
-```
-
-The workflow is intentionally measurable:
-
-**run → persist provenance → compare → identify regressions/improvements**
 
 ## CLI
 
