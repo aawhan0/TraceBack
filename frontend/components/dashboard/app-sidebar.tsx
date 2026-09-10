@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BookOpen, PanelLeftClose, PanelLeftOpen, Search, FlaskConical, History, Settings } from 'lucide-react'
+import { BookOpen, PanelLeftClose, PanelLeftOpen, Search, FlaskConical, History, Settings, LibraryBig } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -11,6 +11,7 @@ const items = [
   { label: 'Investigate', href: '/', icon: Search },
   { label: 'Experiments', href: '/experiments', icon: FlaskConical },
   { label: 'History', href: '/history', icon: History },
+  { label: 'Knowledge Base', href: '/knowledge', icon: LibraryBig },
 ]
 
 const secondaryItems = [
