@@ -4,10 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trbk"
-version = "0.1.0"
+version = "0.1.1"
 description = "LLM-assisted incident investigation and deterministic evaluation."
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [
+  { name = "Aawhan Vyas" },
+]
+license = { file = "LICENSE" }
+keywords = ["llm", "incident-response", "root-cause-analysis", "evaluation", "mcp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+]
 dependencies = [
   "fastapi>=0.115,<1",
   "pydantic>=2.9,<3",
@@ -16,6 +29,11 @@ dependencies = [
   "mcp>=2.2,<3",
   "msgpack>=1.2.1,<2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/aawhan0/TraceBack"
+Repository = "https://github.com/aawhan0/TraceBack"
+Issues = "https://github.com/aawhan0/TraceBack/issues"
 
 [project.scripts]
 trbk = "app.cli:main"
