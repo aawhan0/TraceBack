@@ -8,8 +8,9 @@ from app.agent.llm import LLMInvestigator
 from app.agent.runtime import InvestigationRuntime
 from app.config import Settings
 from app.evaluation.evaluator import EvaluationResult, evaluate_diagnosis
+from app.evaluation.timeline import InvestigationTimeline, build_timeline
 from app.models.domain import Diagnosis, IncidentScenario, InvestigationRun
-from app.observability.events import TraceContext
+from app.observability.events import InMemoryEventSink, TraceContext
 from app.repository.runs import RunStore, SQLiteRunStore, utc_now
 
 
@@ -24,6 +25,7 @@ class InvestigationResult:
     created_at: datetime
     execution_id: str
     trace_id: str
+    timeline: InvestigationTimeline
 
 
 class InvestigationService:
@@ -45,11 +47,14 @@ class InvestigationService:
                 else BaselineInvestigator(scenario)
             )
 
+        sink = InMemoryEventSink() if trace is None else None
+        trace_context = trace or TraceContext.create(sink)
         execution = InvestigationRuntime(
             investigator,
-            trace=trace,
+            trace=trace_context,
             max_duration_ms=max_duration_ms,
         ).execute(scenario.incident)
+        timeline = build_timeline(sink.events(trace_context.trace_id)) if sink is not None else InvestigationTimeline(trace_context.trace_id, ())
         if execution.phase != "completed" or execution.diagnosis is None:
             raise RuntimeError(
                 f"investigation execution failed: {execution.error_type}: "
@@ -70,6 +75,7 @@ class InvestigationService:
             created_at=created_at,
             execution_id=execution.execution_id,
             trace_id=execution.trace_id,
+            timeline=timeline,
         )
         store = run_store or SQLiteRunStore(Settings.from_environment().database_path)
         store.save(

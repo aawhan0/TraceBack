@@ -10,6 +10,8 @@ from app.api.schemas import (
     ExperimentSummaryResponse,
     InvestigationRequest,
     InvestigationResponse,
+    InvestigationTimelineResponse,
+    TimelineEntryResponse,
 )
 from app.config import Settings
 from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_dict, compare_experiments
@@ -69,6 +71,20 @@ def investigate(request: InvestigationRequest) -> InvestigationResponse:
     else:
         result = service.investigate(scenario)
 
+    timeline = InvestigationTimelineResponse(
+        trace_id=result.timeline.trace_id,
+        event_count=result.timeline.event_count,
+        entries=[
+            TimelineEntryResponse(
+                name=entry.name,
+                timestamp=entry.timestamp,
+                duration_ms=entry.duration_ms,
+                attributes=entry.attributes,
+            )
+            for entry in result.timeline.entries
+        ],
+    )
+
     return InvestigationResponse(
         scenario_id=result.scenario_id,
         mode=request.mode,
@@ -83,6 +99,7 @@ def investigate(request: InvestigationRequest) -> InvestigationResponse:
         run_id=result.run_id,
         duration_ms=result.duration_ms,
         created_at=result.created_at,
+        timeline=timeline,
     )
 
 
@@ -121,8 +138,6 @@ def _provenance_response(provenance):
 def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
     catalog = {scenario.id: scenario for scenario in SCENARIOS}
     try:
-        # Experiment names identify runs; dataset identity must remain stable so
-        # compatible runs can be compared across baseline/candidate names.
         dataset = build_manifest(
             "core-scenarios",
             "1",
