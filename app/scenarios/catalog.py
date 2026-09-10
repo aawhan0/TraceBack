@@ -12,9 +12,24 @@ DATABASE_POOL_EXHAUSTION = IncidentScenario(
         status="investigating",
     ),
     evidence=[
-        Evidence(id="ev-db-001", source="api", kind="logs", content="checkout-api: timeout acquiring database connection from pool"),
-        Evidence(id="ev-db-002", source="database", kind="metrics", content="database active connections at configured pool maximum"),
-        Evidence(id="ev-db-003", source="api", kind="logs", content="checkout-api: requests waiting for database connections"),
+        Evidence(
+            id="ev-db-001",
+            source="api",
+            kind="logs",
+            content="checkout-api: timeout acquiring database connection from pool",
+        ),
+        Evidence(
+            id="ev-db-002",
+            source="database",
+            kind="metrics",
+            content="database active connections at configured pool maximum",
+        ),
+        Evidence(
+            id="ev-db-003",
+            source="api",
+            kind="logs",
+            content="checkout-api: requests waiting for database connections",
+        ),
     ],
     expected_root_cause="Database connection pool exhaustion",
     root_cause_keywords=["database", "connection pool", "exhaustion"],
@@ -31,9 +46,24 @@ REDIS_CONNECTIVITY_FAILURE = IncidentScenario(
         status="investigating",
     ),
     evidence=[
-        Evidence(id="ev-redis-001", source="api", kind="logs", content="session-service: Redis connection refused"),
-        Evidence(id="ev-redis-002", source="redis", kind="metrics", content="Redis connection failures increased sharply after network change"),
-        Evidence(id="ev-redis-003", source="network", kind="events", content="network policy changed for the application namespace"),
+        Evidence(
+            id="ev-redis-001",
+            source="api",
+            kind="logs",
+            content="session-service: Redis connection refused",
+        ),
+        Evidence(
+            id="ev-redis-002",
+            source="redis",
+            kind="metrics",
+            content="Redis connection failures increased sharply after network change",
+        ),
+        Evidence(
+            id="ev-redis-003",
+            source="network",
+            kind="events",
+            content="network policy changed for the application namespace",
+        ),
     ],
     expected_root_cause="Redis connectivity failure caused by network policy",
     root_cause_keywords=["redis", "connectivity", "network policy"],
@@ -50,9 +80,24 @@ RUNAWAY_WORKER_CPU = IncidentScenario(
         status="investigating",
     ),
     evidence=[
-        Evidence(id="ev-cpu-001", source="worker", kind="metrics", content="worker CPU remains above 95% across the fleet"),
-        Evidence(id="ev-cpu-002", source="worker", kind="logs", content="worker: repeated retry loop processing the same failed job"),
-        Evidence(id="ev-cpu-003", source="queue", kind="metrics", content="queue depth grows while worker throughput declines"),
+        Evidence(
+            id="ev-cpu-001",
+            source="worker",
+            kind="metrics",
+            content="worker CPU remains above 95% across the fleet",
+        ),
+        Evidence(
+            id="ev-cpu-002",
+            source="worker",
+            kind="logs",
+            content="worker: repeated retry loop processing the same failed job",
+        ),
+        Evidence(
+            id="ev-cpu-003",
+            source="queue",
+            kind="metrics",
+            content="queue depth grows while worker throughput declines",
+        ),
     ],
     expected_root_cause="Runaway worker retry loop",
     root_cause_keywords=["worker", "retry loop"],
@@ -82,5 +127,4 @@ def get_scenario(scenario_id: str) -> IncidentScenario:
     raise KeyError(f"Unknown scenario: {scenario_id}")
 
 
-# Backwards-compatible catalog name for modules that only need the built-in cases.
 SCENARIOS = BUILTIN_SCENARIOS
