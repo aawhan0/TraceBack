@@ -1,6 +1,6 @@
 # MCP Evidence Sources
 
-Traceback can aggregate evidence from operator-configured remote MCP servers without giving the investigation agent arbitrary tool access.
+TraceBack can extend its evidence layer with operator-configured remote MCP servers while keeping the investigation agent's tool surface constrained.
 
 ## Configuration
 
@@ -16,35 +16,64 @@ Set `TRACEBACK_MCP_EVIDENCE_SOURCES` to a JSON list:
 ]
 ```
 
-Each source must have:
+Each configured source requires:
 
-- a stable lowercase `id`
+- a stable lowercase source `id`
 - an `http` or `https` MCP endpoint
-- a tool that implements the Traceback evidence contract
+- a remote tool that follows TraceBack's structured evidence contract
 
-The configured tool is called with only these arguments:
+The integration is explicitly operator-configured. The model cannot invent a source or choose an arbitrary remote tool.
+
+## Evidence contract
+
+The configured remote tool is called with a narrow operation contract:
 
 - `scenario_id`
 - `operation`: `list`, `get`, or `search`
 - `evidence_id`
 - `query`
 
-The remote tool must return a structured list of evidence objects containing `id`, `source`, `kind`, and `content`. Traceback adds `external_source` so the origin remains attributable in downstream results.
+Responses contain structured evidence objects with:
+
+- `id`
+- `source`
+- `kind`
+- `content`
+
+TraceBack preserves external attribution by attaching the configured source identity to downstream evidence.
 
 ## MCP tools
 
-The server exposes three tools:
+The MCP server exposes:
 
-- `get_incident_evidence` — built-in and persisted scenario evidence
-- `list_evidence_sources` — configured remote source metadata
-- `get_custom_evidence` — read-only retrieval from one configured remote source
+| Tool | Purpose |
+| --- | --- |
+| `get_incident_evidence` | Retrieve evidence from built-in and persisted scenarios |
+| `list_evidence_sources` | Inspect configured remote source metadata |
+| `get_custom_evidence` | Read evidence from one configured remote source |
 
-This keeps the MCP boundary explicit: Traceback never forwards arbitrary tool names or arbitrary arguments supplied by the model.
+The boundary is intentionally narrow: TraceBack does not forward arbitrary model-supplied tool names or arbitrary arguments.
 
 ## Security boundary
 
-Remote source configuration is operator-controlled. URLs are restricted to HTTP(S), source IDs are unique, and the registry is capped at 20 sources.
+Remote source configuration is controlled by the operator. The application validates source IDs and URLs, requires HTTP(S), rejects duplicate IDs, and caps the registry at 20 sources.
 
-Traceback does not execute remote commands, read arbitrary local files, or expose authentication secrets through the source configuration. Network reachability and trust of configured endpoints remain deployment responsibilities.
+TraceBack does not execute remote commands, read arbitrary local files through this integration, or expose authentication secrets in source configuration. Endpoint reachability and trust remain deployment responsibilities.
 
-The feature is intentionally narrow. Authentication, OAuth, and write-capable remote tools should be added as separate capabilities with their own validation and tests.
+Authentication, OAuth, write-capable tools, and broader remote-tool orchestration are intentionally outside this feature's scope.
+
+## Local testing
+
+The built-in MCP server can be launched with:
+
+```powershell
+python -m app.mcp.server
+```
+
+For Inspector-based development:
+
+```powershell
+mcp dev app/mcp/server.py
+```
+
+See the main [README](../README.md) for the overall architecture and local setup.
