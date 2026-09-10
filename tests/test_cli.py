@@ -47,6 +47,9 @@ def test_cli_benchmark_command_returns_json(tmp_path, capsys, monkeypatch) -> No
     assert '"experiment_id"' in output
     assert '"regression_passed": true' in output
     assert '"pass_rate": 1.0' in output
+    assert '"root_cause_accuracy": 1.0' in output
+    assert '"average_evidence_recall": 1.0' in output
+    assert '"average_evidence_precision": 1.0' in output
 
 
 def test_cli_benchmark_report_renders_markdown(tmp_path, capsys, monkeypatch) -> None:
@@ -130,3 +133,4 @@ def test_compare_command_outputs_structured_delta(tmp_path, monkeypatch, capsys)
     output = capsys.readouterr().out
     assert '"verdict": "unchanged"' in output
     assert '"pass_rate"' in output
+    assert '"root_cause_accuracy"' in output
