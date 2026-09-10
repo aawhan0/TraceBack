@@ -33,6 +33,18 @@ def test_investigation_service_is_end_to_end() -> None:
     assert sink.events()
 
 
+def test_investigation_service_exposes_runtime_timeline() -> None:
+    result = InvestigationService().investigate(SCENARIOS[0])
+    names = result.timeline.names()
+    assert result.timeline.trace_id == result.trace_id
+    assert result.timeline.event_count >= 5
+    assert names[0] == "investigation.created"
+    assert "investigation.started" in names
+    assert "investigator.started" in names
+    assert "investigator.completed" in names
+    assert names[-1] == "investigation.completed"
+
+
 def test_investigation_service_persists_runtime_identity() -> None:
     scenario = SCENARIOS[0]
     result = InvestigationService().investigate(scenario)
