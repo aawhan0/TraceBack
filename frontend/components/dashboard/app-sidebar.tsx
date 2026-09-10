@@ -3,13 +3,18 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BookOpen, PanelLeftClose, PanelLeftOpen, Search, FlaskConical, History, Settings, LibraryBig } from 'lucide-react'
+import { BookOpen, PanelLeftClose, PanelLeftOpen, Search, FlaskConical, GitCompareArrows, History, BadgeCheck, FileText, LibraryBig, Sparkles, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const items = [
   { label: 'Investigate', href: '/', icon: Search },
   { label: 'Experiments', href: '/experiments', icon: FlaskConical },
+  { label: 'Compare', href: '/experiments/compare', icon: GitCompareArrows },
+  { label: 'Evaluation', href: '/evaluation', icon: BadgeCheck },
+  { label: 'Reports', href: '/reports', icon: FileText },
+  { label: 'Scenarios', href: '/scenarios', icon: LibraryBig },
+  { label: 'Playground', href: '/playground', icon: Sparkles },
   { label: 'History', href: '/history', icon: History },
   { label: 'Knowledge Base', href: '/knowledge', icon: LibraryBig },
 ]
@@ -34,7 +39,7 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-semibold">T</div>
       {!collapsed && <span className="text-sm font-semibold tracking-tight">TraceBack</span>}
     </div>
-    <nav className="flex-1 space-y-1 p-2 pt-4">
+    <nav className="flex-1 space-y-1 overflow-y-auto p-2 pt-4">
       {items.map(renderItem)}
       <div className="my-3 border-t border-border" />
       {secondaryItems.map(renderItem)}
