@@ -48,7 +48,7 @@ TraceBack keeps these responsibilities separate:
 - **Evaluation** measures the diagnosis against scenario-defined expectations.
 - **Persistence** stores completed runs, experiments, and custom scenarios.
 - **Observability** records runtime events without changing the investigation result.
-- **Benchmarking** coordinates repeated experiments and comparisons.
+- **Benchmarking** coordinates repeated experiments, regression gates, and comparisons.
 - **FastAPI** is the application-facing API; **MCP** is the tool protocol used by the investigation side.
 
 The most important boundary is between **generation and evaluation**: the investigator proposes the diagnosis; deterministic code decides whether it satisfies the scenario contract.
@@ -103,7 +103,7 @@ The evaluator does not generate or improve the diagnosis. It measures:
 - recommended-action presence
 - overall pass/fail
 
-Recall and precision are treated as fully satisfied at 100% for the overall pass decision.
+Recall and precision are exposed as quantitative quality metrics; the configured benchmark pass decision can also enforce explicit thresholds for them.
 
 ### Persistence
 
@@ -167,13 +167,15 @@ Repeated investigations
       ▼
 Persisted experiment
       │
-      ├── statistics
+      ├── aggregate metrics
+      ├── confidence / latency statistics
       ├── calibration
       ├── regression policy
-      └── comparison
+      ├── Wilson pass-rate interval
+      └── comparison / matrices
 ```
 
-This turns investigation quality into a repeatable measurement instead of a one-off demonstration.
+Each persisted experiment records the dataset identity and fingerprint plus provenance. Comparisons expose deltas for pass rate, root-cause accuracy, evidence recall, evidence precision, confidence, and latency, making model/configuration behavior inspectable across matching datasets.
 
 ## Evaluation boundary
 
@@ -198,6 +200,12 @@ Persisted result / benchmark statistics
 
 The evaluator should never silently modify the diagnosis. Its role is measurement.
 
+## Reproducible benchmark snapshot
+
+The final local benchmark used the three built-in scenarios with 10 repetitions, producing 30 runs per configuration. The deterministic baseline passed all 30 runs with 100% pass rate and 100% root-cause accuracy. A local Qwen 2.5 3B run passed 3 of 30 runs (10%) with 10% root-cause accuracy. Average confidence was 75.0% for the baseline and 90.0% for Qwen 2.5 3B; average duration was 0.09 ms and 2289.78 ms respectively.
+
+These figures are a reproducible project snapshot rather than a general model benchmark. They depend on the scenario dataset, model/runtime configuration, prompts, hardware, and repetition count.
+
 ## Design principles
 
 ### Local-first
@@ -218,7 +226,7 @@ Given the same diagnosis and scenario, evaluation should produce the same result
 
 ### Reproducibility
 
-Scenario definitions, benchmark configuration, and experiment provenance are persisted or version-controlled so runs can be repeated and compared.
+Scenario definitions, benchmark configuration, dataset fingerprints, and experiment provenance are persisted or version-controlled so runs can be repeated and compared.
 
 ### Small surface area
 
