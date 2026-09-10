@@ -1,291 +1,241 @@
-# Traceback Architecture
+# TraceBack Architecture
 
 ## Purpose
 
-Traceback investigates production-like software incidents using an LLM agent and operational tools, then evaluates the resulting diagnosis against deterministic scenario ground truth.
+TraceBack investigates production-like software incidents using a deterministic baseline or an LLM investigator, gathers operational evidence through explicit tools, produces a structured diagnosis, and measures that diagnosis against deterministic scenario ground truth.
 
-The architecture is intentionally small. The project is designed to demonstrate engineering principles around agents, MCP, structured outputs, grounding, and evaluation without becoming a full observability platform.
+The architecture is intentionally small. The system demonstrates practical engineering around agents, MCP, structured outputs, evidence grounding, persistence, observability, and evaluation without becoming a full observability or incident-management platform.
 
-## System Flow
+## System flow
 
 ```text
-┌──────────────┐
-│   Incident   │
-└──────┬───────┘
-       │
-       ▼
-┌─────────────────────┐
-│ Investigation Agent │
-└─────────┬───────────┘
-          │
-          │ MCP tool calls
-          ▼
-┌─────────────────────┐
-│ Operational Tools   │
-│ logs / metrics / ...│
-└─────────┬───────────┘
-          │
-          │ Evidence
-          ▼
-┌─────────────────────┐
-│ Structured Diagnosis│
-│ Pydantic validation │
-└─────────┬───────────┘
-          │
-          │ diagnosis + evidence
-          ▼
-┌─────────────────────┐
-│ Deterministic       │
-│ Evaluator           │
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│ Evaluation Report   │
-└─────────────────────┘
+Incident
+   │
+   ▼
+Investigation Service
+   │
+   ├── Deterministic baseline
+   │
+   └── LLM investigator ──► Provider / Ollama
+                              │
+                              ▼
+                         MCP / tools
+                              │
+                              ▼
+                      Operational evidence
+                              │
+                              ▼
+                      Structured diagnosis
+                              │
+                              ▼
+                  Deterministic evaluator
+                              │
+                    ┌─────────┴─────────┐
+                    ▼                   ▼
+               Persisted run       Benchmarks
+                    │                   │
+                    └─────────┬─────────┘
+                              ▼
+                         Web dashboard
 ```
 
-## Current implementation boundary
+## Core boundaries
 
-The repository now has a working deterministic control path around the future LLM/MCP integrations:
+TraceBack keeps these responsibilities separate:
 
-- the API selects a version-controlled scenario
-- the service invokes an investigator
-- the investigator retrieves evidence through a tool contract
-- the diagnosis is validated by Pydantic
-- deterministic evaluation measures the result
-- aggregate evaluation summarizes repeated runs
+- **Investigation** gathers evidence and proposes a diagnosis.
+- **Diagnosis** is a structured contract validated with Pydantic.
+- **Evaluation** measures the diagnosis against scenario-defined expectations.
+- **Persistence** stores completed runs, experiments, and custom scenarios.
+- **Observability** records runtime events without changing the investigation result.
+- **Benchmarking** coordinates repeated experiments and comparisons.
+- **FastAPI** is the application-facing API; **MCP** is the tool protocol used by the investigation side.
 
-The baseline investigator is deliberately replaceable. It exists to prove the contracts and orchestration before model behavior is introduced.
+The most important boundary is between **generation and evaluation**: the investigator proposes the diagnosis; deterministic code decides whether it satisfies the scenario contract.
 
-## Current implementation boundary
+## Main components
 
-Traceback now has both sides of the agent boundary:
+### Scenario catalog
 
-- a deterministic baseline investigator
-- an LLM investigator with a provider protocol
-- an Ollama HTTP provider
-- strict Diagnosis parsing and validation
-- a constrained scenario evidence tool
-- a real MCP server exposing incident evidence
-- deterministic per-run and aggregate evaluation
-- comparison utilities for experiments
+A scenario defines a small, reproducible incident case. It contains the incident description, available evidence, expected root cause, causal keywords, and optional required evidence IDs.
 
-FastAPI remains the application-facing API while MCP is the model-facing tool protocol.
+Built-in scenarios are version-controlled. Custom scenarios are persisted in SQLite and enter the same catalog and investigation path.
 
-## Main Components
+### Investigation service
 
-### Incident
+The service owns application orchestration. It selects the requested scenario and investigator mode, invokes the investigator, evaluates the resulting diagnosis, and persists the completed run.
 
-The incident is the starting point for an investigation.
+### Investigators
 
-It contains enough context for the agent to understand the reported problem without encoding the answer directly into the prompt.
+TraceBack supports two investigation paths:
 
-### Evidence
+- **Deterministic baseline** for repeatable local validation and regression checks.
+- **LLM investigator** for model-backed diagnosis through the provider abstraction.
 
-Evidence represents operational observations gathered during the investigation.
+The LLM path keeps provider-specific behavior behind a provider interface so Ollama does not become a core domain dependency.
 
-Each evidence item has an identifier so the final diagnosis can explicitly reference the information used to reach its conclusion.
+### MCP and evidence tools
 
-This is important for grounding: the system can evaluate not only **what** the model concluded, but also **which evidence** it used.
+Evidence is retrieved through explicit tool contracts rather than silently injected context. TraceBack includes a real MCP evidence server and a constrained remote-source integration for operator-configured external MCP endpoints.
 
-### MCP Tool Layer
+Evidence remains attributable through stable IDs, sources, kinds, and content.
 
-The agent interacts with operational evidence through tools exposed through MCP.
+### Structured diagnosis
 
-The exact tool set can evolve, but the architectural requirement is that evidence comes through an explicit tool boundary rather than being silently injected as hidden context.
+The diagnosis contract contains:
 
-Tools should return attributable, structured evidence where practical.
-
-### LLM Provider
-
-The LLM is responsible for reasoning over the incident and gathered evidence.
-
-Ollama is the current local inference implementation.
-
-The application should depend on a provider-level interface rather than Ollama-specific behavior wherever practical. This allows future model/provider comparisons without rewriting the investigation system.
-
-### Structured Diagnosis
-
-The agent returns a structured diagnosis rather than an arbitrary block of text.
-
-The diagnosis contains:
-
-- incident ID
+- incident or scenario identity
 - root cause
 - evidence IDs
 - confidence
 - recommended action
 
-Pydantic validation should reject malformed outputs before they enter the evaluation/reporting pipeline.
+Pydantic validation rejects malformed outputs before they enter the evaluation and reporting flow.
 
-### Scenario Registry
+### Deterministic evaluator
 
-An incident scenario defines deterministic ground truth for a testable failure mode.
-
-A scenario contains:
-
-- incident
-- available evidence
-- expected root cause
-- root-cause keywords
-- required evidence IDs
-
-Scenarios are deliberately small and human-readable.
-
-### Deterministic Evaluator
-
-The evaluator is intentionally separate from the LLM.
-
-It checks measurable properties of the diagnosis, including:
+The evaluator does not generate or improve the diagnosis. It measures:
 
 - root-cause match
-- required evidence recall
+- evidence recall
 - evidence precision
 - confidence validity
-- action presence
+- recommended-action presence
+- overall pass/fail
 
-This prevents a second probabilistic model from becoming the authority on whether the first model was correct.
+Recall and precision are treated as fully satisfied at 100% for the overall pass decision.
 
-### Aggregate Evaluation
+### Persistence
 
-A scenario can be executed repeatedly.
-
-The aggregate layer summarizes repeated runs so different models, prompts, configurations, or tool strategies can eventually be compared using the same scenario definitions.
-
-## Evaluation Boundary
-
-The most important architectural boundary is:
+Completed investigations are stored after evaluation. The application service owns orchestration while the repository layer owns storage.
 
 ```text
-LLM output
-    │
-    ▼
-Structured diagnosis
-    │
-    ▼
-Deterministic evaluator
-    │
-    ├── correct / incorrect
-    ├── evidence recall
-    ├── evidence precision
-    └── aggregate reliability
+FastAPI / CLI
+     │
+     ▼
+InvestigationService
+     │
+     ├── Investigator
+     │     ├── Baseline
+     │     └── LLM → Provider
+     │
+     ├── Evaluator
+     │
+     └── RunStore → SQLite
+                         │
+                         ▼
+                   InvestigationRun
 ```
 
-The evaluator should not change the diagnosis or improve it. Its job is to measure it.
+The same persistence boundary supports experiments and custom scenarios. Docker Compose keeps database state outside the backend image through persistent storage under `/data`.
 
-## Design Principles
+### Observability
+
+Investigation and benchmark execution emit runtime events through the observability layer.
+
+```text
+Investigation / Benchmark
+          │
+          ▼
+      TraceContext
+          │
+          ▼
+       EventSink
+          │
+          ▼
+   Timeline / exporters
+```
+
+Observability records how the system behaved; evaluation decides whether the result met its contract.
+
+### Benchmark platform
+
+The benchmark path builds on the same scenario and investigation contracts:
+
+```text
+Scenario Catalog
+      │
+      ▼
+Dataset / configuration
+      │
+      ▼
+Benchmark Service
+      │
+      ▼
+Repeated investigations
+      │
+      ▼
+Persisted experiment
+      │
+      ├── statistics
+      ├── calibration
+      ├── regression policy
+      └── comparison
+```
+
+This turns investigation quality into a repeatable measurement instead of a one-off demonstration.
+
+## Evaluation boundary
+
+```text
+LLM / baseline output
+          │
+          ▼
+Structured diagnosis
+          │
+          ▼
+Deterministic evaluator
+          │
+          ├── root-cause match
+          ├── evidence recall
+          ├── evidence precision
+          ├── confidence validity
+          └── action presence
+          │
+          ▼
+Persisted result / benchmark statistics
+```
+
+The evaluator should never silently modify the diagnosis. Its role is measurement.
+
+## Design principles
 
 ### Local-first
 
-Local inference keeps the initial development loop inexpensive and makes incident data easier to keep local.
+Local inference keeps the development loop inexpensive and makes the default workflow easy to reproduce.
 
 ### Provider-agnostic
 
-The application should not make Ollama a hard dependency of core domain logic.
+Ollama is the current local provider, not the application's core abstraction.
 
 ### Explicit evidence
 
-Evidence should have stable IDs and identifiable sources.
+Evidence has stable identifiers and attributable sources so diagnoses can be inspected and evaluated.
 
 ### Deterministic evaluation
 
 Given the same diagnosis and scenario, evaluation should produce the same result.
 
-### Small surface area
-
-New infrastructure should be justified by an actual engineering requirement.
-
 ### Reproducibility
 
-Scenario definitions and evaluation configuration should be version-controlled so model results can be reproduced and compared.
+Scenario definitions, benchmark configuration, and experiment provenance are persisted or version-controlled so runs can be repeated and compared.
 
-## Future Extension Points
+### Small surface area
 
-The architecture leaves room for:
+Infrastructure is introduced only when it solves a demonstrated product or evaluation requirement.
 
-- additional MCP investigation tools
-- additional LLM providers
-- more incident scenarios
-- richer evaluation metrics
-- latency/token measurements
-- model/configuration comparison
-- a minimal web UI
+## Extension points
 
-These are extension points, not requirements for the initial system.
+The architecture can be extended with additional MCP tools, LLM providers, scenarios, evaluation metrics, latency/token measurements, and model/configuration comparisons without changing the core generation/evaluation boundary.
 
-## Non-Goals
+## Non-goals
 
-Traceback is not intended to become:
+TraceBack is not intended to become:
 
 - a full observability platform
-- a production incident-management replacement
+- a replacement for production incident-management systems
 - a generic chatbot
-- a large-scale distributed monitoring system
-- a collection of dozens of superficial integrations
+- a large distributed monitoring platform
+- a collection of superficial integrations
 
-The system should stay focused on **LLM-assisted incident diagnosis and measurable reliability**.
-
-
-## Persistence boundary
-
-Completed investigations are persisted after deterministic evaluation. The application service owns orchestration; the repository owns storage.
-
-```text
-FastAPI / CLI
-     |
-     v
-InvestigationService
-     |
-     +--> Investigator
-     |      +--> Baseline
-     |      +--> LLM -> Provider
-     |
-     +--> Evaluator
-     |
-     +--> RunStore -> SQLite
-     |
-     v
-InvestigationRun
-```
-
-The `RunStore` protocol keeps SQLite-specific details out of the investigation domain. This makes historical runs available now while leaving room for a shared datastore later.
-
-
-## Evaluation platform
-
-The investigation path now feeds a higher-level benchmark platform.
-
-Scenario Catalog
-      |
-      v
-Dataset Manifest -----> fingerprint
-      |
-      v
-Benchmark Service
-      |
-      v
-Experiment Runner
-      |
-      +----> Investigation Service ----> Run Store
-      |
-      v
-Experiment Result
-      |
-      +----> Statistics
-      +----> Calibration
-      +----> Regression Policy
-      |
-      v
-Experiment Store
-
-Observability is orthogonal:
-
-Investigation / Benchmark
-      |
-      v
-TraceContext -> EventSink -> Timeline / Exporter
-
-This separation matters. Evaluation decides whether an investigation meets its contract; observability records how the system behaved; persistence stores what happened; the benchmark service coordinates repeatable runs.
-
-No layer is responsible for silently changing another layer's result.
+The project stays focused on **LLM-assisted incident diagnosis and measurable reliability**.
