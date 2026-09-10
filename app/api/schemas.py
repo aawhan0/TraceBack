@@ -42,6 +42,23 @@ class InvestigationResponse(BaseModel):
     timeline: InvestigationTimelineResponse
 
 
+class CustomScenarioEvidence(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
+    source: str = Field(min_length=1, max_length=100)
+    kind: str = Field(min_length=1, max_length=100)
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class CustomScenarioRequest(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+    expected_root_cause: str = Field(min_length=1, max_length=500)
+    root_cause_keywords: list[str] = Field(min_length=1, max_length=20)
+    evidence: list[CustomScenarioEvidence] = Field(min_length=1, max_length=50)
+    required_evidence_ids: list[str] = Field(default_factory=list, max_length=50)
+
+
 class MatrixConfigurationRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     mode: Literal["baseline", "llm"] = "baseline"
@@ -60,10 +77,9 @@ class MatrixResponse(BaseModel):
     matrix_id: str
     dataset_name: str
     dataset_version: str
-    dataset_fingerprint: str
-    experiment_ids: list[str]
-    best_experiment_id: str
-    comparisons: list[dict[str, object]]
+    fingerprint: str
+    case_count: int
+    scenario_ids: list[str]
 
 
 class ExperimentRequest(BaseModel):
@@ -129,7 +145,6 @@ class ExperimentSummaryResponse(BaseModel):
     created_at: datetime
     total_runs: int
     passed_runs: int
-    pass_rate: float
     regression_passed: bool | None
     provenance: BenchmarkProvenanceResponse | None = None
 
