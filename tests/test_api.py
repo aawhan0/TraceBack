@@ -111,9 +111,9 @@ def test_experiment_history_and_detail_are_persisted(tmp_path, monkeypatch) -> N
     assert detail.status_code == 200
     body = detail.json()
     assert body["dataset_fingerprint"] == payload["dataset_fingerprint"]
-    assert body["result"]["root_cause_accuracy"] == 1.0
-    assert body["result"]["average_evidence_recall"] == 1.0
-    assert body["result"]["average_evidence_precision"] == 1.0
+    assert body["root_cause_accuracy"] == 1.0
+    assert body["average_evidence_recall"] == 1.0
+    assert body["average_evidence_precision"] == 1.0
     assert body["provenance"]["git_revision"]
 
 
