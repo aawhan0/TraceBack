@@ -44,7 +44,7 @@ jobs:
         env:
           TRACEBACK_DATABASE_PATH: ${{ runner.temp }}/traceback-benchmark.db
         run: |
-          traceback benchmark \
+          trbk benchmark \
             --name ci-baseline \
             --repetitions 3 \
             --min-pass-rate 1.0 \

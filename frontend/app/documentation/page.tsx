@@ -13,18 +13,21 @@ const sections = [
   { title: 'Environment settings', description: 'Check the API connection and change the dashboard theme.', icon: Settings, href: '/settings' },
 ]
 
-const setup = `git clone https://github.com/aawhan0/TraceBack.git
+const setup = `python -m pip install trbk
+trbk --help
+trbk scenarios`
+
+const localSetup = `git clone https://github.com/aawhan0/TraceBack.git
 cd TraceBack
 python -m venv .venv
 python -m pip install -e ".[dev]"
-traceback --help
-traceback scenarios`
+trbk --help`
 
-const commands = `traceback investigate database-pool-exhaustion
-traceback runs --limit 10
-traceback benchmark --mode baseline --repetitions 3 --name baseline-smoke
-traceback experiments --limit 20
-traceback compare <baseline-id> <candidate-id>`
+const commands = `trbk investigate database-pool-exhaustion
+trbk runs --limit 10
+trbk benchmark --mode baseline --repetitions 3 --name baseline-smoke
+trbk experiments --limit 20
+trbk compare <baseline-id> <candidate-id>`
 
 function CodeBlock({ value }: { value: string }) {
   const [copied, setCopied] = useState(false)
@@ -56,8 +59,10 @@ export default function DocumentationPage() {
     </section>
 
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-start gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"><Terminal className="h-4 w-4" /></div><div><h2 className="text-sm font-semibold">Install the CLI</h2><p className="mt-0.5 text-xs text-muted-foreground">Python 3.12+ is required. The repository already exposes the <code>traceback</code> command through its package entry point; install it once in a virtual environment and the commands below are runnable locally.</p></div></div>
+      <div className="flex items-start gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"><Terminal className="h-4 w-4" /></div><div><h2 className="text-sm font-semibold">Install the CLI</h2><p className="mt-0.5 text-xs text-muted-foreground">Python 3.12+ is required. Install the published <code>trbk</code> package from PyPI, then use the CLI directly from your terminal.</p></div></div>
       <CodeBlock value={setup} />
+      <p className="mt-2 text-[11px] text-muted-foreground">For repository development, use the editable installation shown below.</p>
+      <CodeBlock value={localSetup} />
       <p className="mt-2 text-[11px] text-muted-foreground">On Windows PowerShell, activate the environment first with <code className="rounded bg-muted px-1 py-0.5">.\.venv\Scripts\Activate.ps1</code>. On macOS/Linux, use <code className="rounded bg-muted px-1 py-0.5">source .venv/bin/activate</code>.</p>
     </section>
 
