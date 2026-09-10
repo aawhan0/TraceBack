@@ -231,7 +231,26 @@ For each investigation, TraceBack evaluates:
 | Action present | Whether a recommended action was produced |
 | Pass/fail | Whether the diagnosis satisfies the scenario's acceptance criteria |
 
-Benchmarking adds repeated runs, pass rates, confidence and latency statistics, Wilson pass-rate intervals, regression gates, persisted experiment provenance, experiment comparison, and multi-configuration matrices.
+Benchmarking adds repeated runs, pass rates, root-cause accuracy, evidence recall and precision, confidence and latency statistics, Wilson pass-rate intervals, regression gates, persisted experiment provenance, experiment comparison, and multi-configuration matrices.
+
+### Final local benchmark snapshot
+
+The final 10-repetition benchmark used the three built-in scenarios, giving **30 investigation runs per configuration**.
+
+| Metric | Deterministic baseline | Qwen 2.5 3B |
+| --- | ---: | ---: |
+| Runs | 30 | 30 |
+| Pass rate | **100.00%** | 10.00% |
+| Root-cause accuracy | **100.00%** | 10.00% |
+| Average confidence | 75.0% | **90.0%** |
+| Average duration | **0.09 ms** | 2289.78 ms |
+| Database pool exhaustion | 100.00% | 10.00% |
+| Redis connectivity failure | 100.00% | 0.00% |
+| Runaway worker CPU | 100.00% | 20.00% |
+
+The baseline regression gate passed. The Qwen experiment failed the configured 100% pass-rate/root-cause threshold, which is intentional: TraceBack is designed to surface model reliability gaps rather than hide them.
+
+> These figures are a local benchmark snapshot, not a claim of general model capability. Hardware, model version, Ollama configuration, prompts, scenario definitions, and repetitions can change the observed results.
 
 Typical commands:
 
@@ -330,6 +349,7 @@ See [docs/deployment.md](docs/deployment.md) for deployment and configuration de
 TraceBack includes GitHub Actions workflows for:
 
 - Python/static verification and tests
+- deterministic benchmark gating
 - dependency review
 - CodeQL analysis
 - container vulnerability scanning with Trivy
@@ -349,7 +369,7 @@ TraceBack/
 ├── .github/workflows/     # CI, security, dependency and release workflows
 ├── app/
 │   ├── agent/             # investigators, LLM/provider boundary, runtime
-│   ├── api/               # FastAPI routes, including knowledge search
+│   ├── api/               # FastAPI routes and contracts
 │   ├── evaluation/        # metrics, regression, comparison, benchmarking
 │   ├── mcp/               # MCP evidence server and external-source integration
 │   ├── models/             # domain contracts
@@ -390,7 +410,7 @@ TraceBack complements rather than duplicates the rest of the portfolio:
 
 ## Status
 
-The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, Model Playground, custom MCP evidence sources, Incident Knowledge Base, functional Next.js web UI, and PyPI/CLI distribution are implemented. The project is now in final local validation and portfolio-polish mode.
+The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, Model Playground, custom MCP evidence sources, Incident Knowledge Base, functional Next.js web UI, and PyPI/CLI distribution are implemented. The project is now in final integration validation and portfolio-polish mode.
 
 ## Author
 
