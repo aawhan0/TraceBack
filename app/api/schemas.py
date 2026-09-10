@@ -6,6 +6,19 @@ from pydantic import BaseModel, Field
 from app.models.domain import Diagnosis
 
 
+class TimelineEntryResponse(BaseModel):
+    name: str
+    timestamp: datetime
+    duration_ms: float | None = None
+    attributes: dict[str, str] = Field(default_factory=dict)
+
+
+class InvestigationTimelineResponse(BaseModel):
+    trace_id: str
+    event_count: int
+    entries: list[TimelineEntryResponse]
+
+
 class InvestigationRequest(BaseModel):
     scenario_id: str = Field(min_length=1)
     mode: Literal["baseline", "llm"] = "baseline"
@@ -26,6 +39,7 @@ class InvestigationResponse(BaseModel):
     run_id: str
     duration_ms: float
     created_at: datetime
+    timeline: InvestigationTimelineResponse
 
 
 class MatrixConfigurationRequest(BaseModel):
