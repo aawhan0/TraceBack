@@ -99,6 +99,9 @@ def test_experiment_history_and_detail_are_persisted(tmp_path, monkeypatch) -> N
     assert payload["experiment_id"]
     assert payload["regression_passed"] is True
     assert payload["pass_rate_interval_lower"] < 1.0
+    assert payload["root_cause_accuracy"] == 1.0
+    assert payload["average_evidence_recall"] == 1.0
+    assert payload["average_evidence_precision"] == 1.0
 
     history = client.get("/experiments")
     assert history.status_code == 200
@@ -149,6 +152,9 @@ def test_experiment_comparison_endpoint_returns_deltas(tmp_path, monkeypatch) ->
     body = comparison.json()
     assert body["dataset"]["fingerprint"] == first.json()["dataset_fingerprint"]
     assert body["metrics"]["pass_rate"]["delta"] == 0.0
+    assert body["metrics"]["root_cause_accuracy"]["delta"] == 0.0
+    assert body["metrics"]["evidence_recall"]["delta"] == 0.0
+    assert body["metrics"]["evidence_precision"]["delta"] == 0.0
     assert body["verdict"] == "unchanged"
 
 
