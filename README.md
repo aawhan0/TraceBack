@@ -1,18 +1,18 @@
-# Traceback
+# TraceBack
 
 > **Local-first LLM incident diagnosis and evaluation system for investigating production-like failures with MCP tools, structured evidence, and deterministic evaluation.**
 
-Traceback is an engineering-focused portfolio project for exploring how LLMs can investigate software incidents without treating generated answers as automatically correct.
+TraceBack is an engineering-focused portfolio project exploring how LLMs can investigate software incidents without treating generated answers as automatically correct.
 
-Given a production-like incident, Traceback gathers operational evidence through tools, produces a structured diagnosis, identifies the likely root cause, cites the evidence used, recommends an action, and evaluates the result against deterministic ground truth.
+Given a production-like incident, TraceBack gathers operational evidence through tools, produces a structured diagnosis, identifies the likely root cause, cites the evidence used, recommends an action, and evaluates the result against deterministic ground truth.
 
 The goal is not to build another chatbot or a Datadog/PagerDuty competitor. The goal is to build a small, testable system that makes **LLM incident diagnosis measurable**.
 
-## Why Traceback?
+## Why TraceBack?
 
-LLM-based incident investigation is easy to demonstrate and hard to evaluate.
+LLM incident investigation is easy to demonstrate and hard to evaluate. A model can produce a convincing explanation while selecting irrelevant evidence or identifying the wrong cause.
 
-A model can produce a convincing explanation while selecting irrelevant evidence or identifying the wrong cause. Traceback therefore separates:
+TraceBack separates:
 
 - **Investigation** — what evidence the agent can gather.
 - **Diagnosis** — what the model believes happened.
@@ -35,18 +35,15 @@ This makes model behavior measurable rather than purely subjective.
 - **Regression gates** for protecting measured investigation quality
 - **Custom scenario authoring** with persisted ground truth and evidence
 - **Custom MCP evidence sources** through a constrained remote-source contract
-- **Model Playground** for interactive baseline vs. Ollama investigation runs
+- **Model Playground** for baseline vs. Ollama investigation runs
 - **Incident Knowledge Base** for deterministic search across known failure patterns and latest run state
 - **Local-first inference** using Ollama
 - **Provider-agnostic LLM boundary** so inference can be replaced without redesigning the system
-- **FastAPI backend** for exposing the system as a real service
-- **Next.js dashboard** for interactive investigation, experiments, and run history
-- **Pytest coverage** for agent, tool, model, evaluation, and reporting behavior
-- **GitHub Actions CI** for automated verification
+- **FastAPI backend** and **Next.js dashboard**
+- **SQLite persistence** for investigations, experiments, and scenarios
+- **GitHub Actions CI**, CodeQL, dependency review, container scanning, SBOMs, and release automation
 
 ## Architecture
-
-At a high level, Traceback follows this flow:
 
 ```text
 Incident
@@ -79,19 +76,19 @@ Investigation Agent
          Evaluation Report
 ```
 
-The important boundary is between **generation** and **evaluation**: the LLM proposes a diagnosis, while deterministic code decides whether that diagnosis satisfies the scenario's measurable criteria.
+The key engineering boundary is between **generation** and **evaluation**: the LLM proposes a diagnosis, while deterministic code decides whether that diagnosis satisfies the scenario's measurable criteria.
 
-See [docs/architecture.md](docs/architecture.md) for the architecture notes.
+See [docs/architecture.md](docs/architecture.md) for the detailed architecture notes.
 
 ## Current Scenarios
 
-Traceback ships with a small set of practical production-style failures:
+TraceBack ships with practical production-style failures including:
 
 - **Database pool exhaustion**
 - **Redis connectivity failure**
 - **Runaway worker CPU saturation**
 
-The dashboard can also create **custom scenarios** with a persisted incident description, expected root cause, causal keywords, and evidence set. Custom scenarios immediately become available to investigation and benchmarking through the same scenario catalog.
+The dashboard can also create **custom scenarios** with an incident description, expected root cause, causal keywords, and evidence set. Custom scenarios immediately become available to investigation and benchmarking through the same scenario catalog.
 
 ## Technology Stack
 
@@ -100,57 +97,61 @@ The dashboard can also create **custom scenarios** with a persisted incident des
 | Language | Python 3.12+ |
 | API | FastAPI |
 | Frontend | Next.js 15, React 19, TypeScript |
-| Charts / UI | Recharts, Tailwind CSS, shadcn-style primitives |
+| UI | Tailwind CSS, Recharts, shadcn-style primitives |
 | Agent/tool protocol | MCP |
 | LLM inference | Ollama |
-| Data validation | Pydantic |
+| Validation | Pydantic |
 | Persistence | SQLite |
 | Testing | Pytest |
 | CI/CD | GitHub Actions |
 | Containers | Docker / Docker Compose |
+| Package / CLI | PyPI (`trbk`) |
+
+## Install from PyPI
+
+TraceBack is distributed as the `trbk` Python package and exposes the `trbk` command-line interface.
+
+```powershell
+python -m pip install trbk
+trbk --help
+trbk scenarios
+```
+
+The product remains branded **TraceBack**; `trbk` is the Python distribution and CLI name.
 
 ## Run Locally
 
-Traceback uses Python 3.12+ for the backend and Node.js 22 for the Next.js frontend container.
+TraceBack uses Python 3.12+ for the backend and Node.js 22 for the Next.js frontend.
 
-### 1. Create the Python environment
+### Backend
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
-```
-
-### 2. Run the backend test suite
-
-```powershell
 python -m pytest
 ```
 
-The verification suite covers the API, investigation flow, evaluation, persistence, jobs, security hardening, Docker definitions, and related behavior.
-
-### 3. Run the full stack with Docker Compose
+### Full stack with Docker Compose
 
 ```powershell
 docker compose up --build -d
 ```
 
-Open the dashboard at:
+Open:
 
 - Dashboard: `http://127.0.0.1:3000`
 - API docs: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/health`
 
-The Next.js frontend proxies `/api/*` requests to the FastAPI service, keeping browser requests same-origin while the application remains split into frontend and backend containers.
-
-Stop Compose:
+Stop the stack with:
 
 ```powershell
 docker compose down
 ```
 
-### 4. Run the frontend outside Docker
+### Frontend outside Docker
 
 ```powershell
 cd frontend
@@ -162,35 +163,41 @@ npm run dev
 
 Then open `http://127.0.0.1:3000`.
 
-### 5. Run a baseline investigation
+## Investigation
+
+Run a deterministic baseline investigation without an LLM:
 
 ```powershell
-traceback investigate database-pool-exhaustion
+trbk investigate database-pool-exhaustion
 ```
 
-Baseline investigation does not require an LLM runtime.
+LLM-backed investigation uses Ollama:
 
-The dashboard's investigation, experiments, playground, history, reports, scenarios, evaluation, comparison, and knowledge views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
+```powershell
+trbk investigate database-pool-exhaustion --mode llm --model llama3.2
+```
 
-### 6. Try the Model Playground
+The dashboard's investigation, experiments, playground, history, reports, scenarios, evaluation, comparison, and knowledge views call the real backend contracts.
 
-Open **Playground** in the dashboard to select a built-in or custom scenario, choose an Ollama model, and compare a deterministic baseline run with an LLM-backed run. The result panel exposes the same diagnosis, evidence, evaluation outcome, latency, and run ID used elsewhere in Traceback.
+## Model Playground
 
-### 7. Search the Incident Knowledge Base
+Open **Playground** in the dashboard to select a built-in or custom scenario, choose an Ollama model, and compare a deterministic baseline run with an LLM-backed run.
 
-Open **Knowledge Base** to search reusable incident patterns. Results are derived from the same scenario catalog used by investigations, including custom scenarios, and show expected root cause, evidence requirements, and the latest persisted evaluation state.
+The result panel exposes the same diagnosis, evidence, evaluation outcome, latency, and run ID used elsewhere in TraceBack.
 
-The backend endpoint is:
+## Incident Knowledge Base
+
+Open **Knowledge Base** to search reusable incident patterns. Results come from the same scenario catalog used by investigations, including custom scenarios, and expose expected root cause, evidence requirements, and the latest persisted evaluation state.
+
+Search is deterministic by design; it is not an LLM-generated retrieval system.
 
 ```text
 GET /knowledge?q=<query>&limit=<1-50>
 ```
 
-Search is deterministic; it is deliberately not an LLM-generated knowledge or retrieval system.
+## Custom Scenarios
 
-## Custom scenarios
-
-Use the **Scenarios** view in the dashboard to author a reusable incident case. Each custom scenario stores:
+Use the **Scenarios** view to author a reusable incident case. Each custom scenario stores:
 
 - a stable scenario ID and incident title
 - a production-style incident description
@@ -199,85 +206,60 @@ Use the **Scenarios** view in the dashboard to author a reusable incident case. 
 - one or more evidence items with source, kind, ID, and content
 - optional required evidence IDs for recall evaluation
 
-Custom scenarios are persisted in the same SQLite database as the rest of Traceback. They are returned by `GET /scenarios`, can be investigated through `POST /investigations`, and can participate in experiments, matrices, and the Knowledge Base without changing the investigation engine.
+Custom scenarios are persisted in the same SQLite database as the rest of TraceBack and can participate in investigations, experiments, matrices, and the Knowledge Base.
 
-## Custom MCP evidence sources
+## Custom MCP Evidence Sources
 
-Traceback can connect to configured remote MCP evidence sources through `TRACEBACK_MCP_EVIDENCE_SOURCES`. The integration uses a strict structured evidence contract and preserves external-source attribution rather than silently mixing external data into built-in evidence.
+TraceBack can connect to configured remote MCP evidence sources through `TRACEBACK_MCP_EVIDENCE_SOURCES`.
+
+The integration uses a strict structured evidence contract and preserves external-source attribution rather than silently mixing external data into built-in evidence.
 
 See [docs/mcp-evidence-sources.md](docs/mcp-evidence-sources.md) for configuration and the expected MCP tool contract.
 
-## LLM development
+## Evaluation and Benchmarking
 
-LLM mode uses Ollama by default and reads:
-
-- `TRACEBACK_MODEL`
-- `OLLAMA_BASE_URL`
-- `TRACEBACK_OLLAMA_TIMEOUT`
-
-Example:
-
-```powershell
-traceback investigate database-pool-exhaustion --mode llm --model llama3.2
-```
-
-The LLM path and deterministic baseline share the same diagnosis contract and evaluator.
-
-## MCP development
-
-The evidence server can be launched locally with:
-
-```powershell
-python -m app.mcp.server
-```
-
-For MCP Inspector development:
-
-```powershell
-mcp dev app/mcp/server.py
-```
-
-The MCP server exposes scenario evidence through a constrained tool boundary.
-
-## Evaluation and benchmarking
-
-For each investigation, Traceback evaluates:
+For each investigation, TraceBack evaluates:
 
 | Metric | What it measures |
 | --- | --- |
 | Root-cause match | Whether the diagnosis contains the required causal keywords |
 | Evidence recall | How much required evidence was selected |
 | Evidence precision | How much selected evidence is valid for the scenario |
-| Confidence | Whether the reported confidence is valid and observable |
+| Confidence validity | Whether the reported confidence is valid and observable |
 | Action present | Whether a recommended action was produced |
 | Pass/fail | Whether the diagnosis satisfies the scenario's acceptance criteria |
 
-A run passes when the current scenario rules are satisfied.
-
-Benchmarking adds:
-
-- repeated runs
-- pass rates
-- confidence statistics
-- latency statistics
-- Wilson pass-rate intervals
-- regression gates
-- persisted experiment provenance
-- experiment comparison
-- multi-configuration matrices
+Benchmarking adds repeated runs, pass rates, confidence and latency statistics, Wilson pass-rate intervals, regression gates, persisted experiment provenance, experiment comparison, and multi-configuration matrices.
 
 Typical commands:
 
 ```powershell
-traceback benchmark --mode baseline --repetitions 3 --name baseline-smoke
-traceback benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
-traceback compare <baseline-experiment-id> <candidate-experiment-id>
-traceback matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2 --repetitions 3
+trbk benchmark --mode baseline --repetitions 3 --name baseline-smoke
+trbk benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
+trbk compare <baseline-experiment-id> <candidate-experiment-id>
+trbk matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2 --repetitions 3
 ```
 
-This makes the workflow a measurable loop:
+The workflow is intentionally measurable:
 
 **run → persist provenance → compare → identify regressions/improvements**
+
+## CLI
+
+After installing the package, the main commands are:
+
+```text
+trbk scenarios
+trbk investigate <scenario-id>
+trbk runs --scenario-id <scenario-id>
+trbk show <run-id>
+trbk stats --scenario-id <scenario-id>
+trbk benchmark --repetitions 3 --name baseline-smoke
+trbk experiments --limit 20
+trbk experiment <experiment-id>
+trbk compare <baseline-id> <candidate-id>
+trbk matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2
+```
 
 ## API
 
@@ -305,26 +287,23 @@ Core endpoints include:
 
 FastAPI's generated documentation is available at `/docs`.
 
-## CLI
+## MCP Development
 
-After installation, the `traceback` command provides:
+Launch the evidence server locally with:
 
-```text
-traceback scenarios
-traceback investigate <scenario-id>
-traceback runs --scenario-id <scenario-id>
-traceback show <run-id>
-traceback stats --scenario-id <scenario-id>
-traceback benchmark --repetitions 3 --name baseline-smoke
-traceback experiments --limit 20
-traceback experiment <experiment-id>
-traceback compare <baseline-id> <candidate-id>
-traceback matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2
+```powershell
+python -m app.mcp.server
 ```
 
-## Persistence and operations
+For MCP Inspector development:
 
-Completed investigations, experiments, and custom scenarios are persisted locally in SQLite. Traceback also exposes lightweight operational telemetry, readiness checks, request correlation, and durable job state.
+```powershell
+mcp dev app/mcp/server.py
+```
+
+## Persistence and Operations
+
+Completed investigations, experiments, and custom scenarios are persisted locally in SQLite. TraceBack also exposes lightweight operational telemetry, readiness checks, request correlation, and durable job state.
 
 The current deployment boundary is intentionally single-node and local-first. SQLite state can be mounted into `/data` when using the production container.
 
@@ -336,19 +315,17 @@ Build the backend production image:
 docker build -t traceback:local .
 ```
 
-Or use the complete stack:
+Or run the complete stack:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Compose exposes the backend on `8000` and the frontend on `3000`, persists SQLite state through the `traceback-data` named volume, and uses application health endpoints for container healthchecks.
+See [docs/deployment.md](docs/deployment.md) for deployment and configuration details.
 
-See [docs/deployment.md](docs/deployment.md) for the deployment contract and configuration details.
+## CI, Security, and Release Engineering
 
-## CI, security, and release engineering
-
-Traceback includes GitHub Actions workflows for:
+TraceBack includes GitHub Actions workflows for:
 
 - Python/static verification and tests
 - dependency review
@@ -361,12 +338,12 @@ Traceback includes GitHub Actions workflows for:
 
 The repository also uses a non-root production container and keeps database state separate from the image.
 
-See [SECURITY.md](SECURITY.md) and the documents under `docs/` for the detailed boundaries.
+See [SECURITY.md](SECURITY.md) for the security policy.
 
-## Project structure
+## Project Structure
 
 ```text
-Traceback/
+TraceBack/
 ├── .github/workflows/     # CI, security, dependency and release workflows
 ├── app/
 │   ├── agent/             # investigators, LLM/provider boundary, runtime
@@ -379,7 +356,7 @@ Traceback/
 │   ├── repository/        # SQLite persistence
 │   ├── scenarios/         # built-in and persisted incident scenarios
 │   ├── services/           # application orchestration
-│   └── tools/             # constrained investigation tools
+│   └── tools/              # constrained investigation tools
 ├── frontend/              # Next.js investigation dashboard
 ├── docs/                  # architecture and operational contracts
 ├── tests/                 # automated behavior tests
@@ -389,7 +366,7 @@ Traceback/
 └── README.md
 ```
 
-## Engineering principles
+## Engineering Principles
 
 - **Measure before claiming.** Resume metrics should come from actual evaluation runs.
 - **Keep the evaluator deterministic.** Do not use an LLM to judge whether an LLM was correct.
@@ -399,19 +376,19 @@ Traceback/
 - **Keep inference replaceable.** Ollama is an implementation choice, not the application's core abstraction.
 - **Test behavior, not test count.** Tests should protect meaningful behavior and edge cases.
 - **Do not build fake UI.** Every interactive capability should connect to real backend functionality.
-- **Stay portfolio-sized.** Traceback should demonstrate engineering depth without becoming an observability platform.
+- **Stay portfolio-sized.** TraceBack should demonstrate engineering depth without becoming an observability platform.
 
-## Project positioning
+## Project Positioning
 
-Traceback complements rather than duplicates the rest of the portfolio:
+TraceBack complements rather than duplicates the rest of the portfolio:
 
 - **Dasaiko** — RAG and retrieval engineering
 - **ModelDock** — ML infrastructure and model serving
-- **Traceback** — LLM agents, MCP, evaluation, and reliability
+- **TraceBack** — LLM agents, MCP, evaluation, and reliability
 
 ## Status
 
-The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, model playground, custom MCP evidence sources, incident knowledge base, and functional Next.js web UI are implemented. The project is now in final local validation and portfolio-polish mode.
+The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, Model Playground, custom MCP evidence sources, Incident Knowledge Base, functional Next.js web UI, and PyPI/CLI distribution are implemented. The project is now in final local validation and portfolio-polish mode.
 
 ## Author
 
