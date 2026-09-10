@@ -1,55 +1,80 @@
 # Benchmarking and Regression
 
-Traceback's benchmark layer is built on top of the normal investigation path. It does not create a second implementation of investigation; it repeatedly executes the same service and evaluates every diagnosis through the same deterministic evaluator.
+TraceBack's benchmark layer repeatedly exercises the normal investigation path and evaluates every result with the same deterministic evaluator used by individual runs.
 
 ## Benchmark lifecycle
 
-Dataset Manifest
-      |
-      v
-Benchmark Request
-      |
-      v
-Experiment Runner
-      |
-      +----> Investigation Service
-      |             |
-      |             +----> Investigator
-      |             +----> Evidence tools
-      |             +----> Deterministic evaluator
-      |             +----> Run persistence
-      |
-      v
-Experiment Result
-      |
-      +----> Descriptive statistics
-      +----> Confidence calibration
-      +----> Regression policy
-      |
-      v
-Experiment Record
+```text
+Scenario catalog
+      │
+      ▼
+Dataset selection
+      │
+      ▼
+Benchmark request
+      │
+      ▼
+Experiment runner
+      │
+      ├── Investigation Service
+      │       ├── Investigator
+      │       ├── Evidence tools
+      │       ├── Deterministic evaluator
+      │       └── Run persistence
+      │
+      ▼
+Experiment result
+      │
+      ├── Statistics
+      ├── Confidence calibration
+      ├── Regression policy
+      └── Provenance
+      │
+      ▼
+Persisted experiment
+```
 
-## Datasets
+## Dataset identity
 
-A DatasetManifest identifies a versioned collection of scenario IDs. The manifest has a SHA-256 fingerprint so a benchmark record can tell you exactly which selection produced the result.
+A benchmark operates on a defined scenario selection. Dataset identity and fingerprints keep results comparable and prevent accidental comparisons against different case sets.
 
-Datasets support:
+The benchmark path is intentionally deterministic in its scenario selection. The same scenario definitions and evaluator are reused across baseline and LLM modes.
 
-- stable names and versions
-- tags
-- weighted cases
-- deterministic selection
-- catalog validation
-- JSON export
-- content fingerprints
+## Run an experiment
 
-A dataset version should be bumped when its case selection or meaning changes.
+### CLI
 
-## Experiment execution
+Baseline:
 
-An ExperimentSpec controls the scenario set and repetition count. The runner executes each selected scenario the requested number of times.
+```powershell
+trbk benchmark --mode baseline --repetitions 3 --name baseline-smoke
+```
 
-Every individual run still flows through InvestigationService, which means run history and per-run evaluation remain available.
+LLM with Ollama:
+
+```powershell
+trbk benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
+```
+
+Selected scenarios:
+
+```powershell
+trbk benchmark --scenario-id database-pool-exhaustion --scenario-id redis-connectivity-failure --repetitions 3 --name database-redis-smoke
+```
+
+The benchmark persists the experiment, its measured result, and execution provenance.
+
+### API
+
+The same flow is available through `POST /experiments`.
+
+```bash
+curl -X POST http://127.0.0.1:8000/experiments \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"baseline-smoke","scenario_ids":["database-pool-exhaustion","redis-connectivity-failure"],"repetitions":3,"mode":"baseline"}'
+```
+
+## Metrics
 
 The aggregate result currently includes:
 
@@ -60,11 +85,9 @@ The aggregate result currently includes:
 - average duration
 - per-scenario pass rates
 
-## Statistical reporting
+The statistics layer also provides percentile summaries and Wilson score intervals. These help interpret small benchmark samples without treating a raw pass rate as stronger evidence than the sample size supports.
 
-The statistics module provides percentile summaries and Wilson score intervals. Wilson intervals are useful for small benchmark sets because a raw 100% pass rate from three examples should not be interpreted as equally strong evidence as 100% from 3,000 examples.
-
-Confidence calibration is measured separately with:
+Confidence calibration is tracked separately with:
 
 - Brier score
 - expected calibration error
@@ -72,13 +95,11 @@ Confidence calibration is measured separately with:
 - confidence buckets
 - confidence standard error
 
-These measurements describe the quality of a model's confidence signal. They do not override the deterministic evaluator.
+Calibration describes the confidence signal; it does not replace the deterministic evaluator.
 
-## Regression gates
+## Regression policy
 
-A RegressionPolicy expresses release requirements explicitly.
-
-Available thresholds include:
+A regression policy expresses explicit release thresholds. Supported measurements include:
 
 - minimum overall pass rate
 - minimum root-cause accuracy
@@ -88,92 +109,48 @@ Available thresholds include:
 - optional minimum average confidence
 - optional maximum average duration
 
-A failed gate produces structured RegressionFailure records instead of a generic boolean.
-
-## Reproducibility
-
-A useful benchmark record should answer four questions:
-
-1. What was evaluated?
-2. Which dataset was used?
-3. What result did the system produce?
-4. Did it satisfy the release policy?
-
-Traceback now persists the dataset name, version, fingerprint, aggregate result, regression report, and creation time.
-
-The next natural extension is to persist model/provider configuration and git revision alongside the record.
-
-## CI usage
-
-A CI job can run a benchmark with a strict threshold and fail the job when the gate fails.
-
 Example:
 
-    traceback benchmark --name ci-baseline --repetitions 3 --min-pass-rate 1.0 --report
+```powershell
+trbk benchmark --repetitions 3 --min-pass-rate 0.9 --name baseline-gated
+```
 
-The CLI report is Markdown-friendly so it can be attached to CI summaries or pull-request comments.
+Fail the command when the regression gate is not satisfied:
 
-## API surface
+```powershell
+trbk benchmark --repetitions 3 --min-pass-rate 0.9 --fail-on-regression
+```
 
-| Endpoint | Purpose |
-| --- | --- |
-| POST /experiments | Execute a selected experiment |
-| GET /experiments | List persisted experiments |
-| GET /experiments/{experiment_id} | Inspect one experiment |
-| GET /datasets/core | Inspect the built-in dataset |
+Generate a Markdown-friendly report:
 
-## Design constraints
+```powershell
+trbk benchmark --repetitions 3 --name baseline-report --report
+```
 
-The benchmark layer deliberately avoids:
+A failed gate produces structured regression information rather than silently treating the benchmark as successful.
 
-- hidden scoring heuristics
-- model-specific evaluation code
-- network calls inside statistics
-- a mandatory telemetry vendor
-- a separate database service
-- random sampling by default
+## Reproducibility and provenance
 
-The goal is a transparent evaluation foundation that can grow into a production benchmarking system without making the core investigation path harder to reason about.
+A persisted experiment records the information needed to understand what was measured, including dataset identity and execution context. Current provenance covers application version, Git revision when available, Python runtime, environment, investigator provider, and LLM model when applicable.
 
+The key questions are:
 
-## Reproducible execution provenance
+1. What was evaluated?
+2. Which dataset or scenario selection was used?
+3. How was it executed?
+4. What result did it produce?
+5. Did it satisfy the release policy?
 
-Every benchmark now records the execution identity alongside its metrics. A persisted experiment can therefore be traced back to:
+## Comparing experiments
 
-- application version
-- Git revision (TRACEBACK_GIT_SHA, then GITHUB_SHA, or unknown)
-- Python runtime version
-- Traceback environment
-- investigator provider
-- model name when an LLM benchmark is used
+Compatible experiments can be compared without rerunning them:
 
-The benchmark control path supports both deterministic baseline runs and Ollama-backed LLM runs. The same dataset, repetitions, evaluator, regression policy, and persistence path are used for both modes.
+```powershell
+trbk compare <baseline-experiment-id> <candidate-experiment-id>
+trbk compare <baseline-experiment-id> <candidate-experiment-id> --report
+```
 
-### CLI
-
-Baseline benchmark:
-
-    traceback benchmark --mode baseline --repetitions 3 --name baseline-smoke
-
-LLM benchmark:
-
-    traceback benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
-
-### API
-
-POST /experiments accepts mode (baseline or llm) and an optional model. LLM mode requires a model and uses the configured Ollama endpoint. The response and persisted experiment record include a provenance object so benchmark results remain interpretable after the run has completed.
-
-
-## Comparing benchmark runs
-
-Once two compatible experiments have been persisted, Traceback can compare them without rerunning either experiment:
-
-    traceback compare <baseline-experiment-id> <candidate-experiment-id>
-    traceback compare <baseline-experiment-id> <candidate-experiment-id> --report
-
-The comparison is deliberately strict. Both experiments must use the same dataset name, version, fingerprint, and scenario set. This prevents a model from appearing to improve simply because it was evaluated against an easier or different dataset.
-
-The comparison reports:
+Comparison is intentionally strict. Experiments must share compatible dataset identity and scenario selection. The result includes:
 
 - overall pass-rate delta
 - average confidence delta
@@ -181,8 +158,24 @@ The comparison reports:
 - per-scenario pass-rate deltas
 - baseline/candidate provider identity
 - baseline/candidate model identity
-- an improved, regressed, or unchanged verdict
+- improved, regressed, or unchanged verdict
 
-The same comparison is available through GET /experiments/{baseline_id}/compare/{candidate_id}.
+An incompatible dataset produces an HTTP 409 instead of a misleading comparison.
 
-A dataset mismatch returns HTTP 409 rather than producing a misleading comparison.
+## Configuration matrices
+
+Use a matrix to evaluate multiple configurations against the same scenario selection:
+
+```powershell
+trbk matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2 --repetitions 3
+```
+
+The matrix persists configuration identities, experiment IDs, dataset fingerprint, and the selected best experiment.
+
+## CI usage
+
+A CI pipeline can run the same benchmark commands with a strict regression threshold and fail the job when quality falls below policy. This makes evaluation quality a release signal rather than a one-off manual check.
+
+## Design constraints
+
+The benchmark layer deliberately avoids hidden scoring heuristics, model-specific evaluator logic, mandatory telemetry vendors, and a separate database service. Investigation, evaluation, persistence, and benchmarking remain distinct responsibilities.
