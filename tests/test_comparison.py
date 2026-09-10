@@ -55,6 +55,9 @@ def test_compare_experiments_reports_metric_and_scenario_deltas() -> None:
     comparison = compare_experiments(baseline, candidate)
 
     assert comparison.pass_rate_delta == 0.5
+    assert comparison.root_cause_accuracy_delta == 0.5
+    assert comparison.evidence_recall_delta == 0.0
+    assert comparison.evidence_precision_delta == 0.0
     assert comparison.verdict == "improved"
     assert comparison.candidate_provider == "ollama"
     assert comparison.candidate_model == "llama3.2"
