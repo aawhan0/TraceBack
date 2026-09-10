@@ -1,8 +1,11 @@
+from uuid import uuid4
+
 from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import (
     BenchmarkProvenanceResponse,
     BenchmarkResponse,
+    CustomScenarioRequest,
     MatrixResponse,
     MatrixRequest as MatrixApiRequest,
     DatasetResponse,
@@ -16,10 +19,11 @@ from app.api.schemas import (
 from app.config import Settings
 from app.evaluation.comparison import IncompatibleBenchmarkError, comparison_to_dict, compare_experiments
 from app.evaluation.dataset import build_manifest
-from app.models.domain import HealthResponse, InvestigationRun, RunStats, RunSummary
+from app.models.domain import HealthResponse, Incident, IncidentScenario, InvestigationRun, RunStats, RunSummary, Evidence
 from app.providers.ollama import OllamaProvider
 from app.repository.runs import SQLiteRunStore
-from app.scenarios.catalog import SCENARIOS, get_scenario
+from app.repository.scenarios import SQLiteScenarioStore
+from app.scenarios.catalog import all_scenarios, get_scenario
 from app.services.benchmark import BenchmarkRequest, BenchmarkService, default_dataset
 from app.services.investigation import InvestigationService
 from app.evaluation.matrix import ExperimentConfiguration
@@ -35,12 +39,48 @@ def health() -> HealthResponse:
 
 
 @router.get("/scenarios", tags=["scenarios"])
-def list_scenarios() -> list[dict[str, str]]:
-    return [{"id": scenario.id, "title": scenario.incident.title} for scenario in SCENARIOS]
+def list_scenarios() -> list[dict[str, object]]:
+    builtins = {scenario.id for scenario in all_scenarios()[:3]}
+    return [
+        {"id": scenario.id, "title": scenario.incident.title, "custom": scenario.id not in builtins}
+        for scenario in all_scenarios()
+    ]
 
 
-@router.get("/scenarios/{scenario_id}", tags=["scenarios"])
-def scenario_detail(scenario_id: str):
+@router.post("/scenarios", response_model=IncidentScenario, status_code=201, tags=["scenarios"])
+def create_scenario(request: CustomScenarioRequest) -> IncidentScenario:
+    existing = {scenario.id for scenario in all_scenarios()}
+    if request.id in existing:
+        raise HTTPException(status_code=409, detail="Scenario ID already exists")
+
+    evidence_ids = [item.id for item in request.evidence]
+    if len(evidence_ids) != len(set(evidence_ids)):
+        raise HTTPException(status_code=400, detail="Evidence IDs must be unique")
+    missing = sorted(set(request.required_evidence_ids) - set(evidence_ids))
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Required evidence IDs not found: {', '.join(missing)}")
+
+    scenario = IncidentScenario(
+        id=request.id,
+        incident=Incident(
+            id=f"inc-custom-{uuid4().hex[:12]}",
+            title=request.title,
+            description=request.description,
+            status="investigating",
+        ),
+        evidence=[Evidence(**item.model_dump()) for item in request.evidence],
+        expected_root_cause=request.expected_root_cause,
+        root_cause_keywords=request.root_cause_keywords,
+        required_evidence_ids=request.required_evidence_ids,
+    )
+    try:
+        return SQLiteScenarioStore(Settings.from_environment().database_path).create(scenario)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/scenarios/{scenario_id}", response_model=IncidentScenario, tags=["scenarios"])
+def scenario_detail(scenario_id: str) -> IncidentScenario:
     try:
         return get_scenario(scenario_id)
     except KeyError as exc:
@@ -136,13 +176,13 @@ def _provenance_response(provenance):
 
 @router.post("/experiments", response_model=BenchmarkResponse, tags=["experiments"])
 def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
-    catalog = {scenario.id: scenario for scenario in SCENARIOS}
+    catalog = {scenario.id: scenario for scenario in all_scenarios()}
     try:
         dataset = build_manifest(
             "core-scenarios",
             "1",
             [catalog[scenario_id] for scenario_id in request.scenario_ids],
-            description="Version-controlled Traceback incident scenarios.",
+            description="TraceBack investigation scenario catalog.",
         )
         benchmark = BenchmarkService()
         result = benchmark.run(
@@ -193,13 +233,13 @@ def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
 
 @router.post("/experiments/matrix", response_model=MatrixResponse, tags=["experiments"])
 def run_experiment_matrix(request: MatrixApiRequest) -> MatrixResponse:
-    catalog = {scenario.id: scenario for scenario in SCENARIOS}
+    catalog = {scenario.id: scenario for scenario in all_scenarios()}
     try:
         dataset = build_manifest(
             "core-scenarios",
             "1",
             [catalog[scenario_id] for scenario_id in request.scenario_ids],
-            description="Version-controlled Traceback incident scenarios.",
+            description="TraceBack investigation scenario catalog.",
         )
         configurations = tuple(
             ExperimentConfiguration(item.name, mode=item.mode, model=item.model)
@@ -315,7 +355,8 @@ def compare_experiment_runs(baseline_id: str, candidate_id: str) -> dict[str, ob
 
 @router.get("/datasets/core", response_model=DatasetResponse, tags=["datasets"])
 def core_dataset() -> DatasetResponse:
-    dataset = default_dataset({scenario.id: scenario for scenario in SCENARIOS})
+    catalog = {scenario.id: scenario for scenario in all_scenarios()}
+    dataset = default_dataset(catalog)
     return DatasetResponse(
         name=dataset.name,
         version=dataset.version,
