@@ -1,8 +1,10 @@
+from pathlib import Path
+
 from app.services.jobs import JobStatus, JobStore
 
 
-def test_job_store_lifecycle_fields_are_preserved():
-    store = JobStore(max_jobs=4)
+def test_job_store_lifecycle_fields_are_preserved(tmp_path):
+    store = JobStore(max_jobs=4, database_path=str(tmp_path / "jobs.db"))
     job = store.create("database-pool-exhaustion", "baseline")
     updated = store.update(job.job_id, status=JobStatus.RUNNING, execution_id="exec-1")
     assert updated.status == JobStatus.RUNNING
