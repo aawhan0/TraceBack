@@ -33,6 +33,7 @@ This makes model behavior measurable rather than purely subjective.
 - **Aggregate reports** for comparing model/configuration behavior
 - **Repeatable experiments** across scenarios and repetitions
 - **Regression gates** for protecting measured investigation quality
+- **Custom scenario authoring** with persisted ground truth and evidence
 - **Local-first inference** using Ollama
 - **Provider-agnostic LLM boundary** so inference can be replaced without redesigning the system
 - **FastAPI backend** for exposing the system as a real service
@@ -81,13 +82,13 @@ See [docs/architecture.md](docs/architecture.md) for the architecture notes.
 
 ## Current Scenarios
 
-Traceback currently focuses on a small set of practical production-style failures:
+Traceback ships with a small set of practical production-style failures:
 
 - **Database pool exhaustion**
 - **Redis connectivity failure**
 - **Runaway worker CPU saturation**
 
-The scenarios are intentionally limited. More scenarios should be added only when they demonstrate meaningful generality or expose a real weakness in the system.
+The dashboard can also create **custom scenarios** with a persisted incident description, expected root cause, causal keywords, and evidence set. Custom scenarios immediately become available to investigation and benchmarking through the same scenario catalog.
 
 ## Technology Stack
 
@@ -168,6 +169,19 @@ Baseline investigation does not require an LLM runtime.
 
 The dashboard's investigation, experiments, and history views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
 
+## Custom scenarios
+
+Use the **Scenarios** view in the dashboard to author a reusable incident case. Each custom scenario stores:
+
+- a stable scenario ID and incident title
+- a production-style incident description
+- the expected root cause
+- causal keywords used by deterministic evaluation
+- one or more evidence items with source, kind, ID, and content
+- optional required evidence IDs for recall evaluation
+
+Custom scenarios are persisted in the same SQLite database as the rest of Traceback. They are returned by `GET /scenarios`, can be investigated through `POST /investigations`, and can participate in experiments and matrices without changing the investigation engine.
+
 ## LLM development
 
 LLM mode uses Ollama by default and reads:
@@ -246,6 +260,7 @@ Core endpoints include:
 
 - `GET /health`
 - `GET /scenarios`
+- `POST /scenarios`
 - `GET /scenarios/{scenario_id}`
 - `POST /investigations`
 - `GET /runs`
@@ -283,7 +298,7 @@ traceback matrix --name model-matrix --config baseline=baseline --config llama=l
 
 ## Persistence and operations
 
-Completed investigations and experiments are persisted locally in SQLite. Traceback also exposes lightweight operational telemetry, readiness checks, request correlation, and durable job state.
+Completed investigations, experiments, and custom scenarios are persisted locally in SQLite. Traceback also exposes lightweight operational telemetry, readiness checks, request correlation, and durable job state.
 
 The current deployment boundary is intentionally single-node and local-first. SQLite state can be mounted into `/data` when using the production container.
 
@@ -332,11 +347,11 @@ Traceback/
 │   ├── api/               # FastAPI routes and web/API integration
 │   ├── evaluation/        # metrics, regression, comparison, benchmarking
 │   ├── mcp/               # MCP evidence server
-│   ├── models/            # domain contracts
+│   ├── models/             # domain contracts
 │   ├── observability/     # telemetry and metrics
 │   ├── providers/         # LLM providers
 │   ├── repository/        # SQLite persistence
-│   ├── scenarios/         # version-controlled incident scenarios
+│   ├── scenarios/         # built-in and persisted incident scenarios
 │   ├── services/          # application orchestration
 │   └── tools/              # constrained investigation tools
 ├── frontend/              # Next.js investigation dashboard
@@ -370,7 +385,7 @@ Traceback complements rather than duplicates the rest of the portfolio:
 
 ## Status
 
-The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, and functional Next.js web UI are implemented. The project is now in final local validation and portfolio-polish mode.
+The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, and functional Next.js web UI are implemented. The project is now in final local validation and portfolio-polish mode.
 
 ## Author
 

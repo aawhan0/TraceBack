@@ -1,4 +1,6 @@
+from app.config import Settings
 from app.models.domain import Evidence, Incident, IncidentScenario
+from app.repository.scenarios import SQLiteScenarioStore
 
 
 DATABASE_POOL_EXHAUSTION = IncidentScenario(
@@ -103,15 +105,26 @@ RUNAWAY_WORKER_CPU = IncidentScenario(
 )
 
 
-SCENARIOS = (
+BUILTIN_SCENARIOS = (
     DATABASE_POOL_EXHAUSTION,
     REDIS_CONNECTIVITY_FAILURE,
     RUNAWAY_WORKER_CPU,
 )
 
 
+def all_scenarios() -> tuple[IncidentScenario, ...]:
+    custom = SQLiteScenarioStore(Settings.from_environment().database_path).list()
+    return BUILTIN_SCENARIOS + tuple(custom)
+
+
 def get_scenario(scenario_id: str) -> IncidentScenario:
-    for scenario in SCENARIOS:
+    for scenario in BUILTIN_SCENARIOS:
         if scenario.id == scenario_id:
             return scenario
+    custom = SQLiteScenarioStore(Settings.from_environment().database_path).get(scenario_id)
+    if custom is not None:
+        return custom
     raise KeyError(f"Unknown scenario: {scenario_id}")
+
+
+SCENARIOS = BUILTIN_SCENARIOS

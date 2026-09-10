@@ -42,6 +42,23 @@ class InvestigationResponse(BaseModel):
     timeline: InvestigationTimelineResponse
 
 
+class CustomScenarioEvidence(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
+    source: str = Field(min_length=1, max_length=100)
+    kind: str = Field(min_length=1, max_length=100)
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class CustomScenarioRequest(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+    expected_root_cause: str = Field(min_length=1, max_length=500)
+    root_cause_keywords: list[str] = Field(min_length=1, max_length=20)
+    evidence: list[CustomScenarioEvidence] = Field(min_length=1, max_length=50)
+    required_evidence_ids: list[str] = Field(default_factory=list, max_length=50)
+
+
 class MatrixConfigurationRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     mode: Literal["baseline", "llm"] = "baseline"
