@@ -68,6 +68,9 @@ def test_experiment_endpoint_runs_repeatable_baseline(tmp_path, monkeypatch) -> 
     assert payload["total_runs"] == 4
     assert payload["passed_runs"] == 4
     assert payload["pass_rate"] == 1.0
+    assert payload["root_cause_accuracy"] == 1.0
+    assert payload["average_evidence_recall"] == 1.0
+    assert payload["average_evidence_precision"] == 1.0
     assert len(payload["scenario_pass_rates"]) == 2
     assert payload["provenance"]["provider"] == "baseline"
     assert payload["provenance"]["model"] is None
@@ -103,8 +106,12 @@ def test_experiment_history_and_detail_are_persisted(tmp_path, monkeypatch) -> N
 
     detail = client.get(f"/experiments/{payload['experiment_id']}")
     assert detail.status_code == 200
-    assert detail.json()["dataset_fingerprint"] == payload["dataset_fingerprint"]
-    assert detail.json()["provenance"]["git_revision"]
+    body = detail.json()
+    assert body["dataset_fingerprint"] == payload["dataset_fingerprint"]
+    assert body["result"]["root_cause_accuracy"] == 1.0
+    assert body["result"]["average_evidence_recall"] == 1.0
+    assert body["result"]["average_evidence_precision"] == 1.0
+    assert body["provenance"]["git_revision"]
 
 
 def test_missing_experiment_returns_404(tmp_path, monkeypatch) -> None:
