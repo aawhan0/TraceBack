@@ -37,8 +37,10 @@ def _score(scenario, query: str) -> tuple[int, list[str]]:
             *(item.content for item in scenario.evidence),
         ]
     ).casefold()
-    terms = [term for term in query.casefold().split() if term]
-    matched = list(dict.fromkeys(term for term in terms if term in haystack))
+    terms = list(dict.fromkeys(term for term in query.casefold().split() if term))
+    matched = [term for term in terms if term in haystack]
+    if len(matched) != len(terms):
+        return 0, []
     return len(matched), matched
 
 
