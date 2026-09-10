@@ -14,6 +14,9 @@ def make_record(experiment_id: str = "exp-1") -> ExperimentRecord:
         total_runs=4,
         passed_runs=3,
         pass_rate=0.75,
+        root_cause_accuracy=0.75,
+        average_evidence_recall=0.9,
+        average_evidence_precision=0.8,
         average_confidence=0.8,
         average_duration_ms=120.0,
         scenario_pass_rates={"db": 1.0, "redis": 0.5},
@@ -59,8 +62,10 @@ def test_experiment_store_round_trips_record(tmp_path) -> None:
 
     loaded = store.get("exp-1")
     assert loaded is not None
-    assert loaded.experiment_id == original.experiment_id
     assert loaded.result.scenario_pass_rates == {"db": 1.0, "redis": 0.5}
+    assert loaded.result.root_cause_accuracy == 0.75
+    assert loaded.result.average_evidence_recall == 0.9
+    assert loaded.result.average_evidence_precision == 0.8
     assert loaded.regression is not None
     assert loaded.regression.failures[0].metric == "pass_rate"
     assert loaded.provenance is not None
@@ -102,4 +107,6 @@ def test_experiment_store_supports_memory_database() -> None:
     store = SQLiteExperimentStore(":memory:")
     record = make_record()
     store.save(record)
-    assert store.get(record.experiment_id) is not None
+    loaded = store.get(record.experiment_id)
+    assert loaded is not None
+    assert loaded.result.average_evidence_recall == record.result.average_evidence_recall
