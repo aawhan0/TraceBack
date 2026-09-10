@@ -111,10 +111,11 @@ export default function EvaluationPage() {
       ) : runs.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No investigation runs have been recorded yet.</div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <section className="rounded-lg border bg-card p-3">
+        <div className="grid gap-6 lg:h-[calc(100vh-9rem)] lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card p-3">
             <div className="px-2 pb-3 text-sm font-semibold">Recent runs</div>
-            <div className="space-y-1">
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              <div className="space-y-1">
               {runs.map((item) => (
                 <button key={item.run_id} onClick={() => setSelectedId(item.run_id)} className={cn('w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-accent', selectedId === item.run_id && 'bg-accent')}>
                   <div className="flex items-center justify-between gap-2">
@@ -125,10 +126,11 @@ export default function EvaluationPage() {
                   <div className="mt-1 text-[11px] text-muted-foreground">{new Date(item.created_at).toLocaleString()}</div>
                 </button>
               ))}
+              </div>
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section className="min-h-0 min-w-0 overflow-y-auto pr-1 space-y-4">
             {detailLoading ? (
               <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading evaluation…</div>
             ) : run ? (
