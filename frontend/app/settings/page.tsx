@@ -23,7 +23,7 @@ const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
 
 export default function SettingsPage() {
   const [health, setHealth] = useState<'checking' | 'ok' | 'error'>('checking')
-  const [theme, setTheme] = useState<Theme>('system')
+  const [theme, setTheme] = useState<Theme>('light')
 
   const checkHealth = () => {
     setHealth('checking')
@@ -34,7 +34,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const saved = window.localStorage.getItem('traceback-theme') as Theme | null
-    const next = saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'system'
+    const next = saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'light'
     setTheme(next)
     applyTheme(next)
     checkHealth()
