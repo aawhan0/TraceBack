@@ -1,6 +1,6 @@
 # Experiments and Regression Gates
 
-TraceBack treats incident investigation as an experimentable system rather than a single request/response demo.
+TraceBack treats incident investigation as an experimentable system rather than a one-off request/response demo. Every experiment uses the normal investigation service, deterministic evaluator, and persistence path.
 
 ## Experiment model
 
@@ -10,73 +10,55 @@ An experiment defines:
 - one or more scenario IDs
 - a repetition count
 - an investigation mode (`baseline` or `llm`)
-- an optional model when using LLM mode
+- an optional model for LLM mode
 
-Every repetition uses the normal investigation service and deterministic evaluator. Results are persisted so they can be inspected later and compared with compatible experiments.
+Every repetition follows the same investigation and deterministic evaluation path. Results are persisted so they can be inspected later and compared with compatible experiments.
 
-The aggregate result includes:
+## Run an experiment
 
-- total runs
-- passed runs
-- overall pass rate
-- average confidence
-- average duration
-- per-scenario pass rates
-- regression result
+### CLI
 
-## Run an experiment from the CLI
-
-Baseline benchmark:
+Deterministic baseline:
 
 ```powershell
 trbk benchmark --mode baseline --repetitions 3 --name baseline-smoke
 ```
 
-LLM benchmark with Ollama:
+Ollama-backed LLM benchmark:
 
 ```powershell
 trbk benchmark --mode llm --model llama3.2 --repetitions 3 --name llama-smoke
 ```
 
-Selected scenarios can be repeated with `--scenario-id`:
+Selected scenarios:
 
 ```powershell
 trbk benchmark --scenario-id database-pool-exhaustion --scenario-id redis-connectivity-failure --repetitions 3 --name database-redis-smoke
 ```
 
-The CLI stores the resulting experiment and its provenance in the same persistence layer used by the dashboard.
+The benchmark stores the resulting experiment and provenance in the same persistence layer used by the dashboard.
 
-## Regression gates
+### Regression gates
 
-A regression policy expresses the minimum quality the experiment must meet. The benchmark path can enforce thresholds such as:
-
-- minimum overall pass rate
-- minimum root-cause accuracy
-- minimum evidence recall
-- minimum evidence precision
-- minimum scenario pass rate
-- optional minimum average confidence
-- optional maximum average duration
-
-For a simple pass-rate gate:
+Set a minimum acceptable pass rate:
 
 ```powershell
 trbk benchmark --repetitions 3 --min-pass-rate 0.9 --name baseline-gated
 ```
 
-Make the command return a non-zero exit code when the gate fails:
+Fail the command when the gate is not satisfied:
 
 ```powershell
 trbk benchmark --repetitions 3 --min-pass-rate 0.9 --fail-on-regression
 ```
 
-Generate a Markdown-friendly report:
+Generate a Markdown report:
 
 ```powershell
 trbk benchmark --repetitions 3 --name baseline-report --report
 ```
 
-A failed gate is represented as structured regression data rather than an opaque boolean.
+The regression policy can also enforce thresholds for root-cause accuracy, evidence recall, evidence precision, scenario pass rate, average confidence, and average duration.
 
 ## Inspect saved experiments
 
@@ -92,7 +74,7 @@ Inspect one experiment:
 trbk experiment <experiment-id>
 ```
 
-The dashboard's **Experiments** view provides the same persisted history and detail data.
+The dashboard's **Experiments** view exposes the same persisted history and detail data.
 
 ## Compare experiments
 
@@ -100,31 +82,26 @@ Compatible experiments can be compared without rerunning them:
 
 ```powershell
 trbk compare <baseline-experiment-id> <candidate-experiment-id>
-```
-
-Generate Markdown output:
-
-```powershell
 trbk compare <baseline-experiment-id> <candidate-experiment-id> --report
 ```
 
-TraceBack checks dataset identity before comparing. Experiments built from incompatible datasets are rejected instead of producing a misleading improvement or regression.
+TraceBack checks dataset identity and scenario compatibility before comparing. A mismatch is rejected instead of producing a misleading improvement or regression.
 
-The comparison reports pass-rate, confidence, and duration deltas together with per-scenario results and provider/model identity.
+The comparison includes pass-rate, confidence, and duration deltas together with per-scenario results and provider/model identity.
 
 ## Configuration matrices
 
-A matrix evaluates multiple configurations against one scenario selection:
+Evaluate multiple configurations against the same scenario selection:
 
 ```powershell
 trbk matrix --name model-matrix --config baseline=baseline --config llama=llm:llama3.2 --repetitions 3
 ```
 
-The matrix stores the dataset fingerprint, experiment IDs, configuration identities, and the best experiment according to the benchmark result.
+A matrix persists configuration identities, experiment IDs, the dataset fingerprint, and the selected best experiment.
 
 ## API
 
-Create an experiment directly through FastAPI:
+Create an experiment through FastAPI:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/experiments \
@@ -132,7 +109,12 @@ curl -X POST http://127.0.0.1:8000/experiments \
   -d '{"name":"baseline-smoke","scenario_ids":["database-pool-exhaustion","redis-connectivity-failure"],"repetitions":3,"mode":"baseline"}'
 ```
 
-The persisted experiment can then be inspected through the `/experiments` endpoints or the dashboard.
+Inspect persisted experiments with:
+
+```text
+GET /experiments
+GET /experiments/{experiment_id}
+```
 
 ## Reproducibility
 
@@ -145,13 +127,11 @@ A useful experiment record should make it possible to answer:
 5. What metrics were produced?
 6. Did the result satisfy the regression policy?
 
-TraceBack keeps the evaluation decision deterministic and persists experiment provenance alongside the measured result.
+TraceBack persists experiment identity and provenance alongside the measured result so benchmark runs remain interpretable after completion.
 
 ## Core principle
 
 Experiment orchestration never decides whether a diagnosis is correct. The deterministic evaluator owns that decision.
-
-The workflow is intentionally simple:
 
 ```text
 investigate
@@ -166,3 +146,5 @@ compare compatible experiments
     ↓
 identify regressions or improvements
 ```
+
+See [benchmarking.md](benchmarking.md) for the statistical and benchmark model, and [cli.md](cli.md) for the complete command reference.
