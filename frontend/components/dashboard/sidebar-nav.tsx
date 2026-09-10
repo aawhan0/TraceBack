@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, FlaskConical, GitCompareArrows, History } from 'lucide-react'
+import { Search, FlaskConical, GitCompareArrows, History, BadgeCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -12,6 +12,7 @@ const ITEMS: Item[] = [
   { label: 'Investigate', href: '/', icon: Search },
   { label: 'Experiments', href: '/experiments', icon: FlaskConical },
   { label: 'Compare', href: '/experiments/compare', icon: GitCompareArrows },
+  { label: 'Evaluation', href: '/evaluation', icon: BadgeCheck },
   { label: 'History', href: '/history', icon: History },
 ]
 
