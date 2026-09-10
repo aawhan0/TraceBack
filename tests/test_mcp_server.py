@@ -5,11 +5,15 @@ from mcp import Client
 from app.mcp.server import mcp
 
 
-def test_mcp_server_exposes_evidence_tool() -> None:
+def test_mcp_server_exposes_evidence_tools() -> None:
     async def exercise() -> None:
         async with Client(mcp) as client:
             tools = await client.list_tools()
-            assert [tool.name for tool in tools.tools] == ["get_incident_evidence"]
+            assert [tool.name for tool in tools.tools] == [
+                "get_incident_evidence",
+                "get_custom_evidence",
+                "list_evidence_sources",
+            ]
 
             result = await client.call_tool(
                 "get_incident_evidence",
