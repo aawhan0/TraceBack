@@ -174,6 +174,39 @@ def _provenance_response(provenance):
     return BenchmarkProvenanceResponse(**provenance.as_dict())
 
 
+def _benchmark_response(result) -> BenchmarkResponse:
+    return BenchmarkResponse(
+        experiment_id=result.experiment_id,
+        name=result.result.name,
+        dataset_name=result.dataset_name,
+        dataset_version=result.dataset_version,
+        dataset_fingerprint=result.dataset_fingerprint,
+        total_runs=result.result.total_runs,
+        passed_runs=result.result.passed_runs,
+        pass_rate=result.result.pass_rate,
+        root_cause_accuracy=result.result.root_cause_accuracy,
+        average_evidence_recall=result.result.average_evidence_recall,
+        average_evidence_precision=result.result.average_evidence_precision,
+        average_confidence=result.result.average_confidence,
+        average_duration_ms=result.result.average_duration_ms,
+        scenario_pass_rates=result.result.scenario_pass_rates,
+        regression_passed=result.regression.passed,
+        regression_failures=[
+            {
+                "metric": failure.metric,
+                "actual": failure.actual,
+                "expected": failure.expected,
+                "direction": failure.direction,
+                "message": failure.message,
+            }
+            for failure in result.regression.failures
+        ],
+        pass_rate_interval_lower=result.regression.pass_rate_interval_lower,
+        pass_rate_interval_upper=result.regression.pass_rate_interval_upper,
+        provenance=_provenance_response(result.provenance),
+    )
+
+
 @router.post("/experiments", response_model=BenchmarkResponse, tags=["experiments"])
 def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
     catalog = {scenario.id: scenario for scenario in all_scenarios()}
@@ -202,33 +235,7 @@ def run_experiment(request: ExperimentRequest) -> BenchmarkResponse:
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    return BenchmarkResponse(
-        experiment_id=result.experiment_id,
-        name=result.result.name,
-        dataset_name=result.dataset_name,
-        dataset_version=result.dataset_version,
-        dataset_fingerprint=result.dataset_fingerprint,
-        total_runs=result.result.total_runs,
-        passed_runs=result.result.passed_runs,
-        pass_rate=result.result.pass_rate,
-        average_confidence=result.result.average_confidence,
-        average_duration_ms=result.result.average_duration_ms,
-        scenario_pass_rates=result.result.scenario_pass_rates,
-        regression_passed=result.regression.passed,
-        regression_failures=[
-            {
-                "metric": failure.metric,
-                "actual": failure.actual,
-                "expected": failure.expected,
-                "direction": failure.direction,
-                "message": failure.message,
-            }
-            for failure in result.regression.failures
-        ],
-        pass_rate_interval_lower=result.regression.pass_rate_interval_lower,
-        pass_rate_interval_upper=result.regression.pass_rate_interval_upper,
-        provenance=_provenance_response(result.provenance),
-    )
+    return _benchmark_response(result)
 
 
 @router.post("/experiments/matrix", response_model=MatrixResponse, tags=["experiments"])
@@ -263,8 +270,6 @@ def run_experiment_matrix(request: MatrixApiRequest) -> MatrixResponse:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-    from app.evaluation.comparison import comparison_to_dict
 
     return MatrixResponse(
         matrix_id=result.matrix_id,
@@ -307,7 +312,6 @@ def get_experiment(experiment_id: str) -> BenchmarkResponse:
     if record is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
     regression = record.regression
-    failures = regression.failures if regression else ()
     return BenchmarkResponse(
         experiment_id=record.experiment_id,
         name=record.result.name,
@@ -317,6 +321,9 @@ def get_experiment(experiment_id: str) -> BenchmarkResponse:
         total_runs=record.result.total_runs,
         passed_runs=record.result.passed_runs,
         pass_rate=record.result.pass_rate,
+        root_cause_accuracy=record.result.root_cause_accuracy,
+        average_evidence_recall=record.result.average_evidence_recall,
+        average_evidence_precision=record.result.average_evidence_precision,
         average_confidence=record.result.average_confidence,
         average_duration_ms=record.result.average_duration_ms,
         scenario_pass_rates=record.result.scenario_pass_rates,
@@ -329,7 +336,7 @@ def get_experiment(experiment_id: str) -> BenchmarkResponse:
                 "direction": failure.direction,
                 "message": failure.message,
             }
-            for failure in failures
+            for failure in (regression.failures if regression else ())
         ],
         pass_rate_interval_lower=regression.pass_rate_interval_lower if regression else 0.0,
         pass_rate_interval_upper=regression.pass_rate_interval_upper if regression else 0.0,
@@ -339,7 +346,6 @@ def get_experiment(experiment_id: str) -> BenchmarkResponse:
 
 @router.get("/experiments/{baseline_id}/compare/{candidate_id}", tags=["experiments"])
 def compare_experiment_runs(baseline_id: str, candidate_id: str) -> dict[str, object]:
-    """Compare two persisted experiments on the same immutable dataset."""
     service = BenchmarkService()
     baseline = service.get(baseline_id)
     if baseline is None:

@@ -12,9 +12,19 @@ def test_health() -> None:
     assert response.json() == {"status": "ok", "service": "traceback"}
 
 
-
 def _result(rate: float) -> ExperimentResult:
-    return ExperimentResult("smoke", 10, int(rate * 10), rate, 0.8, 100, {"db": rate})
+    return ExperimentResult(
+        "smoke",
+        10,
+        int(rate * 10),
+        rate,
+        rate,
+        1.0,
+        1.0,
+        0.8,
+        100,
+        {"db": rate},
+    )
 
 
 def test_quality_snapshot_marks_healthy_result() -> None:

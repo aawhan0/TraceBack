@@ -78,9 +78,7 @@ def evaluate_regression(
 ) -> RegressionReport:
     failures: list[RegressionFailure] = []
 
-    _require_minimum(
-        failures, "pass_rate", metrics.pass_rate, policy.minimum_pass_rate
-    )
+    _require_minimum(failures, "pass_rate", metrics.pass_rate, policy.minimum_pass_rate)
     _require_minimum(
         failures,
         "root_cause_accuracy",
@@ -170,19 +168,13 @@ def _require_minimum(
         )
 
 
-def metrics_from_experiment(
-    result: ExperimentResult,
-    *,
-    root_cause_accuracy: float | None = None,
-    evidence_recall: float | None = None,
-    evidence_precision: float | None = None,
-) -> ExperimentMetrics:
-    """Adapt the compact experiment result to the richer regression contract."""
+def metrics_from_experiment(result: ExperimentResult) -> ExperimentMetrics:
+    """Adapt persisted experiment metrics directly to the regression contract."""
     return ExperimentMetrics(
         pass_rate=result.pass_rate,
-        root_cause_accuracy=result.pass_rate if root_cause_accuracy is None else root_cause_accuracy,
-        evidence_recall=1.0 if evidence_recall is None else evidence_recall,
-        evidence_precision=1.0 if evidence_precision is None else evidence_precision,
+        root_cause_accuracy=result.root_cause_accuracy,
+        evidence_recall=result.average_evidence_recall,
+        evidence_precision=result.average_evidence_precision,
         average_confidence=result.average_confidence,
         average_duration_ms=result.average_duration_ms,
         scenario_pass_rates=dict(result.scenario_pass_rates),

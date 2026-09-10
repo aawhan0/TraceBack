@@ -135,6 +135,9 @@ def _result_to_dict(result: ExperimentResult) -> dict[str, object]:
         "total_runs": result.total_runs,
         "passed_runs": result.passed_runs,
         "pass_rate": result.pass_rate,
+        "root_cause_accuracy": result.root_cause_accuracy,
+        "average_evidence_recall": result.average_evidence_recall,
+        "average_evidence_precision": result.average_evidence_precision,
         "average_confidence": result.average_confidence,
         "average_duration_ms": result.average_duration_ms,
         "scenario_pass_rates": result.scenario_pass_rates,
@@ -158,6 +161,18 @@ def _regression_to_dict(report: RegressionReport | None) -> dict[str, object] | 
         ],
         "pass_rate_interval_lower": report.pass_rate_interval_lower,
         "pass_rate_interval_upper": report.pass_rate_interval_upper,
+        "latency": (
+            {
+                "count": report.latency.count,
+                "minimum": report.latency.minimum,
+                "maximum": report.latency.maximum,
+                "mean": report.latency.mean,
+                "median": report.latency.median,
+                "p95": report.latency.p95,
+            }
+            if report.latency is not None
+            else None
+        ),
     }
 
 
@@ -176,6 +191,9 @@ def _row_to_record(row: sqlite3.Row) -> ExperimentRecord:
         total_runs=result_data["total_runs"],
         passed_runs=result_data["passed_runs"],
         pass_rate=result_data["pass_rate"],
+        root_cause_accuracy=result_data.get("root_cause_accuracy", result_data["pass_rate"]),
+        average_evidence_recall=result_data.get("average_evidence_recall", 1.0),
+        average_evidence_precision=result_data.get("average_evidence_precision", 1.0),
         average_confidence=result_data["average_confidence"],
         average_duration_ms=result_data["average_duration_ms"],
         scenario_pass_rates=result_data["scenario_pass_rates"],
@@ -185,6 +203,13 @@ def _row_to_record(row: sqlite3.Row) -> ExperimentRecord:
     if regression_data:
         from app.evaluation.regression import RegressionFailure, RegressionReport
 
+        latency_data = regression_data.get("latency")
+        latency = None
+        if latency_data:
+            from app.evaluation.statistics import NumericSummary
+
+            latency = NumericSummary(**latency_data)
+
         regression = RegressionReport(
             passed=regression_data["passed"],
             failures=tuple(
@@ -192,6 +217,7 @@ def _row_to_record(row: sqlite3.Row) -> ExperimentRecord:
             ),
             pass_rate_interval_lower=regression_data["pass_rate_interval_lower"],
             pass_rate_interval_upper=regression_data["pass_rate_interval_upper"],
+            latency=latency,
         )
     return ExperimentRecord(
         experiment_id=row["experiment_id"],

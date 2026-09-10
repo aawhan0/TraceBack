@@ -1,10 +1,10 @@
 import pytest
+from datetime import datetime, timezone
 
 from app.evaluation.compare import IncompatibleBenchmarkError, compare_experiments
 from app.evaluation.experiments import ExperimentResult
 from app.evaluation.provenance import BenchmarkProvenance
 from app.repository.experiments import ExperimentRecord
-from datetime import datetime, timezone
 
 
 def make_record(
@@ -21,6 +21,9 @@ def make_record(
         total_runs=2,
         passed_runs=int(pass_rate * 2),
         pass_rate=pass_rate,
+        root_cause_accuracy=pass_rate,
+        average_evidence_recall=1.0,
+        average_evidence_precision=1.0,
         average_confidence=0.8,
         average_duration_ms=100.0,
         scenario_pass_rates=scenarios or {"database-pool-exhaustion": pass_rate},
@@ -52,6 +55,9 @@ def test_compare_experiments_reports_metric_and_scenario_deltas() -> None:
     comparison = compare_experiments(baseline, candidate)
 
     assert comparison.pass_rate_delta == 0.5
+    assert comparison.root_cause_accuracy_delta == 0.5
+    assert comparison.evidence_recall_delta == 0.0
+    assert comparison.evidence_precision_delta == 0.0
     assert comparison.verdict == "improved"
     assert comparison.candidate_provider == "ollama"
     assert comparison.candidate_model == "llama3.2"
