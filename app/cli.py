@@ -22,7 +22,7 @@ def _json(data: object) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="traceback",
+        prog="trbk",
         description="Investigate production-like incidents and inspect evaluation runs.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -94,8 +94,6 @@ def main() -> None:
         scenario_ids = tuple(args.scenario_ids or catalog)
         try:
             selected = [catalog[scenario_id] for scenario_id in scenario_ids]
-            # Keep dataset identity independent from the experiment name. This is
-            # what makes separately named baseline/candidate runs comparable.
             dataset = build_manifest(
                 "core-scenarios",
                 "1",
