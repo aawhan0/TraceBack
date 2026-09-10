@@ -16,14 +16,27 @@ def render_experiment_markdown(
         f"| Total runs | {result.total_runs} |",
         f"| Passed runs | {result.passed_runs} |",
         f"| Pass rate | {result.pass_rate:.2%} |",
+        f"| Root-cause accuracy | {result.root_cause_accuracy:.2%} |",
+        f"| Average evidence recall | {result.average_evidence_recall:.2%} |",
+        f"| Average evidence precision | {result.average_evidence_precision:.2%} |",
         f"| Average confidence | {result.average_confidence:.3f} |",
         f"| Average duration | {result.average_duration_ms:.2f} ms |",
-        "",
-        "## Scenario results",
-        "",
-        "| Scenario | Pass rate |",
-        "| --- | ---: |",
     ]
+    if regression is not None:
+        lines.extend(
+            [
+                f"| Pass-rate Wilson interval | {regression.pass_rate_interval_lower:.2%} – {regression.pass_rate_interval_upper:.2%} |",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Scenario results",
+            "",
+            "| Scenario | Pass rate |",
+            "| --- | ---: |",
+        ]
+    )
     lines.extend(
         f"| {scenario_id} | {pass_rate:.2%} |"
         for scenario_id, pass_rate in sorted(result.scenario_pass_rates.items())
@@ -59,6 +72,12 @@ def render_comparison_markdown(
         "| --- | ---: | ---: | ---: |",
         f"| Pass rate | {baseline.pass_rate:.2%} | {candidate.pass_rate:.2%} | "
         f"{candidate.pass_rate - baseline.pass_rate:+.2%} |",
+        f"| Root-cause accuracy | {baseline.root_cause_accuracy:.2%} | {candidate.root_cause_accuracy:.2%} | "
+        f"{candidate.root_cause_accuracy - baseline.root_cause_accuracy:+.2%} |",
+        f"| Evidence recall | {baseline.average_evidence_recall:.2%} | {candidate.average_evidence_recall:.2%} | "
+        f"{candidate.average_evidence_recall - baseline.average_evidence_recall:+.2%} |",
+        f"| Evidence precision | {baseline.average_evidence_precision:.2%} | {candidate.average_evidence_precision:.2%} | "
+        f"{candidate.average_evidence_precision - baseline.average_evidence_precision:+.2%} |",
         f"| Confidence | {baseline.average_confidence:.3f} | "
         f"{candidate.average_confidence:.3f} | "
         f"{candidate.average_confidence - baseline.average_confidence:+.3f} |",
