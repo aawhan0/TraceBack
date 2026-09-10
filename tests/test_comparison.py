@@ -1,10 +1,10 @@
 import pytest
+from datetime import datetime, timezone
 
 from app.evaluation.compare import IncompatibleBenchmarkError, compare_experiments
 from app.evaluation.experiments import ExperimentResult
 from app.evaluation.provenance import BenchmarkProvenance
 from app.repository.experiments import ExperimentRecord
-from datetime import datetime, timezone
 
 
 def make_record(
@@ -21,6 +21,9 @@ def make_record(
         total_runs=2,
         passed_runs=int(pass_rate * 2),
         pass_rate=pass_rate,
+        root_cause_accuracy=pass_rate,
+        average_evidence_recall=1.0,
+        average_evidence_precision=1.0,
         average_confidence=0.8,
         average_duration_ms=100.0,
         scenario_pass_rates=scenarios or {"database-pool-exhaustion": pass_rate},
