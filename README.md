@@ -34,6 +34,7 @@ This makes model behavior measurable rather than purely subjective.
 - **Repeatable experiments** across scenarios and repetitions
 - **Regression gates** for protecting measured investigation quality
 - **Custom scenario authoring** with persisted ground truth and evidence
+- **Model Playground** for interactive baseline vs. Ollama investigation runs
 - **Local-first inference** using Ollama
 - **Provider-agnostic LLM boundary** so inference can be replaced without redesigning the system
 - **FastAPI backend** for exposing the system as a real service
@@ -167,7 +168,11 @@ traceback investigate database-pool-exhaustion
 
 Baseline investigation does not require an LLM runtime.
 
-The dashboard's investigation, experiments, and history views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
+The dashboard's investigation, experiments, playground, and history views call the real backend contracts. Charts intentionally remain empty until corresponding real runs or experiments exist.
+
+### 6. Try the Model Playground
+
+Open **Playground** in the dashboard to select a built-in or custom scenario, choose an Ollama model, and compare a deterministic baseline run with an LLM-backed run. The result panel exposes the same diagnosis, evidence, evaluation outcome, latency, and run ID used elsewhere in Traceback.
 
 ## Custom scenarios
 
@@ -347,13 +352,13 @@ Traceback/
 │   ├── api/               # FastAPI routes and web/API integration
 │   ├── evaluation/        # metrics, regression, comparison, benchmarking
 │   ├── mcp/               # MCP evidence server
-│   ├── models/             # domain contracts
+│   ├── models/            # domain contracts
 │   ├── observability/     # telemetry and metrics
 │   ├── providers/         # LLM providers
 │   ├── repository/        # SQLite persistence
 │   ├── scenarios/         # built-in and persisted incident scenarios
 │   ├── services/          # application orchestration
-│   └── tools/              # constrained investigation tools
+│   └── tools/             # constrained investigation tools
 ├── frontend/              # Next.js investigation dashboard
 ├── docs/                  # architecture and operational contracts
 ├── tests/                 # automated behavior tests
