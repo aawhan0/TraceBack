@@ -29,6 +29,15 @@ class BenchmarkComparison:
     baseline_pass_rate: float
     candidate_pass_rate: float
     pass_rate_delta: float
+    baseline_root_cause_accuracy: float
+    candidate_root_cause_accuracy: float
+    root_cause_accuracy_delta: float
+    baseline_evidence_recall: float
+    candidate_evidence_recall: float
+    evidence_recall_delta: float
+    baseline_evidence_precision: float
+    candidate_evidence_precision: float
+    evidence_precision_delta: float
     baseline_confidence: float
     candidate_confidence: float
     confidence_delta: float
@@ -69,7 +78,7 @@ class IncompatibleBenchmarkError(ValueError):
 def compare_experiment_results(
     baseline: ExperimentResult,
     candidate: ExperimentResult,
-) -> tuple[float, float, float, tuple[ScenarioComparison, ...]]:
+) -> tuple[float, float, float, float, float, float, tuple[ScenarioComparison, ...]]:
     """Compare the measurable result portion of two compatible experiments."""
     baseline_scenarios = set(baseline.scenario_pass_rates)
     candidate_scenarios = set(candidate.scenario_pass_rates)
@@ -94,6 +103,9 @@ def compare_experiment_results(
     )
     return (
         candidate.pass_rate - baseline.pass_rate,
+        candidate.root_cause_accuracy - baseline.root_cause_accuracy,
+        candidate.average_evidence_recall - baseline.average_evidence_recall,
+        candidate.average_evidence_precision - baseline.average_evidence_precision,
         candidate.average_confidence - baseline.average_confidence,
         candidate.average_duration_ms - baseline.average_duration_ms,
         scenarios,
@@ -114,10 +126,15 @@ def compare_experiments(
             "experiments use different dataset fingerprints; compare matching datasets"
         )
 
-    pass_delta, confidence_delta, duration_delta, scenarios = compare_experiment_results(
-        baseline.result,
-        candidate.result,
-    )
+    (
+        pass_delta,
+        root_cause_accuracy_delta,
+        evidence_recall_delta,
+        evidence_precision_delta,
+        confidence_delta,
+        duration_delta,
+        scenarios,
+    ) = compare_experiment_results(baseline.result, candidate.result)
     baseline_provenance: BenchmarkProvenance | None = baseline.provenance
     candidate_provenance: BenchmarkProvenance | None = candidate.provenance
 
@@ -130,6 +147,15 @@ def compare_experiments(
         baseline_pass_rate=baseline.result.pass_rate,
         candidate_pass_rate=candidate.result.pass_rate,
         pass_rate_delta=pass_delta,
+        baseline_root_cause_accuracy=baseline.result.root_cause_accuracy,
+        candidate_root_cause_accuracy=candidate.result.root_cause_accuracy,
+        root_cause_accuracy_delta=root_cause_accuracy_delta,
+        baseline_evidence_recall=baseline.result.average_evidence_recall,
+        candidate_evidence_recall=candidate.result.average_evidence_recall,
+        evidence_recall_delta=evidence_recall_delta,
+        baseline_evidence_precision=baseline.result.average_evidence_precision,
+        candidate_evidence_precision=candidate.result.average_evidence_precision,
+        evidence_precision_delta=evidence_precision_delta,
         baseline_confidence=baseline.result.average_confidence,
         candidate_confidence=candidate.result.average_confidence,
         confidence_delta=confidence_delta,
@@ -159,6 +185,21 @@ def comparison_to_dict(comparison: BenchmarkComparison) -> dict[str, object]:
                 "baseline": comparison.baseline_pass_rate,
                 "candidate": comparison.candidate_pass_rate,
                 "delta": comparison.pass_rate_delta,
+            },
+            "root_cause_accuracy": {
+                "baseline": comparison.baseline_root_cause_accuracy,
+                "candidate": comparison.candidate_root_cause_accuracy,
+                "delta": comparison.root_cause_accuracy_delta,
+            },
+            "evidence_recall": {
+                "baseline": comparison.baseline_evidence_recall,
+                "candidate": comparison.candidate_evidence_recall,
+                "delta": comparison.evidence_recall_delta,
+            },
+            "evidence_precision": {
+                "baseline": comparison.baseline_evidence_precision,
+                "candidate": comparison.candidate_evidence_precision,
+                "delta": comparison.evidence_precision_delta,
             },
             "average_confidence": {
                 "baseline": comparison.baseline_confidence,
