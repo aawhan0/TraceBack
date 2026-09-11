@@ -32,7 +32,7 @@ const checks = [
   { key: 'root_cause_match', label: 'Root-cause match', description: 'The diagnosis contains every expected root-cause keyword.' },
   { key: 'evidence_recall', label: 'Evidence recall', description: 'Required evidence selected by the diagnosis.' },
   { key: 'evidence_precision', label: 'Evidence precision', description: 'Selected evidence that belongs to the scenario.' },
-  { key: 'confidence_valid', label: 'Confidence validity', description: 'Confidence is within the valid 0–1 range.' },
+  { key: 'confidence_valid', label: 'Confidence validity', description: 'Confidence is within the valid 0â€“1 range.' },
   { key: 'action_present', label: 'Recommended action', description: 'A non-empty remediation action is present.' },
 ] as const
 
@@ -107,7 +107,7 @@ export default function EvaluationPage() {
       <PageHeader title="Evaluation" description="Inspect the evaluator dimensions behind an investigation run." />
 
       {loading ? (
-        <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading runs…</div>
+        <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading runs...</div>
       ) : runs.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No investigation runs have been recorded yet.</div>
       ) : (
@@ -120,9 +120,9 @@ export default function EvaluationPage() {
                 <button key={item.run_id} onClick={() => setSelectedId(item.run_id)} className={cn('w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-accent', selectedId === item.run_id && 'bg-accent')}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-xs font-medium">{item.run_id}</span>
-                    {item.passed ? <BadgeCheck className="h-4 w-4 shrink-0 text-primary" /> : <XCircle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                    {item.passed ? <BadgeCheck className="h-4 w-4 shrink-0 text-primary" /> : <XCircle className="h-4 w-4 shrink-0 text-destructive" />}
                   </div>
-                  <div className="mt-1 truncate text-xs text-muted-foreground">{item.scenario_id} · {item.mode}</div>
+                  <div className="mt-1 truncate text-xs text-muted-foreground">{item.scenario_id}  -  {item.mode}</div>
                   <div className="mt-1 text-[11px] text-muted-foreground">{new Date(item.created_at).toLocaleString()}</div>
                 </button>
               ))}
@@ -132,7 +132,7 @@ export default function EvaluationPage() {
 
           <section className="min-h-0 min-w-0 overflow-y-auto pr-1 space-y-4">
             {detailLoading ? (
-              <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading evaluation…</div>
+              <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading evaluation...</div>
             ) : run ? (
               <>
                 <div className="rounded-lg border bg-card p-5">
@@ -140,14 +140,14 @@ export default function EvaluationPage() {
                     <div>
                       <div className="text-xs uppercase tracking-wide text-muted-foreground">Overall result</div>
                       <div className="mt-1 flex items-center gap-2 text-2xl font-semibold">
-                        {run.passed ? <BadgeCheck className="h-6 w-6 text-primary" /> : <CircleAlert className="h-6 w-6 text-muted-foreground" />}
+                        {run.passed ? <BadgeCheck className="h-6 w-6 text-primary" /> : <CircleAlert className="h-6 w-6 text-destructive" />}
                         {run.passed ? 'Passed' : 'Failed'}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">{passedCount}/5 evaluator dimensions fully satisfied.</p>
                     </div>
                     <button onClick={rerun} disabled={rerunning} className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50">
                       {rerunning ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                      {rerunning ? 'Re-running…' : 'Re-run investigation'}
+                      {rerunning ? 'Re-running...' : 'Re-run investigation'}
                     </button>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
                       <div><div className="text-xs text-muted-foreground">Scenario</div><div className="font-medium">{run.scenario_id}</div></div>
@@ -189,3 +189,4 @@ export default function EvaluationPage() {
     </div>
   )
 }
+

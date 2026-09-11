@@ -1,3 +1,5 @@
+import json
+from urllib import request as urllib_request
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -36,6 +38,35 @@ router = APIRouter()
 @router.get("/health", response_model=HealthResponse, tags=["system"])
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service="traceback")
+
+
+@router.get("/models", tags=["system"])
+def list_models() -> dict[str, object]:
+    """Return models currently installed in the configured Ollama instance."""
+    settings = Settings.from_environment()
+    url = f"{settings.ollama_base_url.rstrip('/')}/api/tags"
+
+    try:
+        with urllib_request.urlopen(
+            url,
+            timeout=settings.ollama_timeout,
+        ) as response:
+            payload = json.load(response)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Unable to connect to Ollama: {exc}",
+        ) from exc
+
+    models = payload.get("models", [])
+    return {
+        "models": [
+            item["name"]
+            for item in models
+            if isinstance(item, dict)
+            and isinstance(item.get("name"), str)
+        ]
+    }
 
 
 @router.get("/scenarios", tags=["scenarios"])
