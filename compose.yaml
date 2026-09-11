@@ -8,6 +8,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
       TRACEBACK_ENVIRONMENT: production
       TRACEBACK_DATABASE_PATH: /data/traceback.db
     volumes:

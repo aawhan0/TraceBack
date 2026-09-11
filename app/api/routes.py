@@ -42,7 +42,20 @@ def health() -> HealthResponse:
 def list_scenarios() -> list[dict[str, object]]:
     builtins = {scenario.id for scenario in all_scenarios()[:3]}
     return [
-        {"id": scenario.id, "title": scenario.incident.title, "custom": scenario.id not in builtins}
+        {
+            "id": scenario.id,
+            "title": scenario.incident.title,
+            "custom": scenario.id not in builtins,
+            "evidence": [
+                {
+                    "id": item.id,
+                    "content": item.content,
+                    "source": item.source,
+                    "kind": item.kind,
+                }
+                for item in scenario.evidence
+            ],
+        }
         for scenario in all_scenarios()
     ]
 
