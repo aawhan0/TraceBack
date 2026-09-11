@@ -3,7 +3,11 @@ from app.models.domain import IncidentScenario
 
 
 class ScenarioEvidenceTool:
-    """Expose scenario evidence through a constrained tool boundary."""
+    """Expose scenario evidence through a constrained tool boundary.
+
+    ``list`` returns metadata only (id/source/kind). Callers must ``get`` or
+    ``search`` to read full evidence content.
+    """
 
     name = "scenario_evidence"
     _allowed_operations = frozenset({"list", "get", "search"})
@@ -20,7 +24,10 @@ class ScenarioEvidenceTool:
             raise ValueError(f"Unsupported evidence operation: {operation}")
 
         if operation == "list":
-            evidence = tuple(self._evidence.values())
+            # Metadata only: callers must get/search to read full content.
+            evidence = tuple(
+                item.model_copy(update={"content": ""}) for item in self._evidence.values()
+            )
         elif operation == "get":
             evidence_id = request.arguments.get("evidence_id", "")
             item = self._evidence.get(evidence_id)
