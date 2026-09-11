@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { Check, CircleAlert, Download, FileText, LoaderCircle } from 'lucide-react'
@@ -23,6 +23,12 @@ type Run = {
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || '/api'
+
+function formatConfidence(value: number | null | undefined) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? `${Math.round(value * 100)}%`
+    : 'N/A'
+}
 
 function download(name: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }))
@@ -91,7 +97,7 @@ export default function ReportsPage() {
       `| Confidence validity | ${selected.confidence_valid ? 'Pass' : 'Fail'} |`,
       `| Recommended action present | ${selected.action_present ? 'Pass' : 'Fail'} |`,
       '',
-      `**Confidence:** ${Math.round(selected.confidence * 100)}%`,
+      `**Confidence:** ${formatConfidence(selected.confidence)}`,
       '',
       `**Evidence IDs:** ${selected.diagnosis?.evidence_ids?.join(', ') || 'None'}`,
     ]
@@ -99,10 +105,14 @@ export default function ReportsPage() {
   }
 
   return <div className="space-y-6"><PageHeader title="Reports" description="Export a persisted investigation run as a portable report." />
-    {loading ? <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading runs…</div> : !runs.length ? <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No investigation runs are available to export.</div> : <div className="grid gap-6 lg:h-[calc(100vh-9rem)] lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
-      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card p-3"><div className="px-2 pb-3 text-sm font-semibold">Select run</div><div className="min-h-0 flex-1 overflow-y-auto pr-1"><div className="space-y-1">{runs.map((run) => <button key={run.run_id} type="button" onClick={() => void loadRun(run.run_id)} className={cn('w-full rounded-md px-3 py-2 text-left hover:bg-accent', selected?.run_id === run.run_id && 'bg-accent')}><div className="flex items-center justify-between gap-2"><span className="truncate text-xs font-medium">{run.run_id}</span>{run.passed ? <Check className="h-4 w-4 text-primary" /> : <CircleAlert className="h-4 w-4 text-muted-foreground" />}</div><div className="mt-1 text-xs text-muted-foreground">{run.scenario_id} · {run.mode}</div></button>)}</div></div></section>
-      <section className="min-h-0 min-w-0 overflow-y-auto pr-1 space-y-4">{selected && <><div className="rounded-lg border bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /><h2 className="text-lg font-semibold">Investigation report</h2></div><p className="mt-1 text-sm text-muted-foreground">{selected.run_id} · {selected.scenario_id}</p></div><div className="flex gap-2"><button type="button" onClick={exportMarkdown} className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"><Download className="h-4 w-4" />Markdown</button><button type="button" onClick={exportJson} className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"><Download className="h-4 w-4" />JSON</button></div></div></div><div className="grid gap-4 sm:grid-cols-2"><div className="rounded-lg border bg-card p-5"><div className="text-xs uppercase tracking-wide text-muted-foreground">Root cause</div><p className="mt-2 text-sm leading-6">{selected.diagnosis?.root_cause || 'Not available in this run.'}</p></div><div className="rounded-lg border bg-card p-5"><div className="text-xs uppercase tracking-wide text-muted-foreground">Recommended action</div><p className="mt-2 text-sm leading-6">{selected.diagnosis?.recommended_action || 'Not available in this run.'}</p></div></div><div className="rounded-lg border bg-card p-5"><div className="mb-3 text-sm font-semibold">Evaluation snapshot</div><div className="grid gap-3 sm:grid-cols-5">{[['Root cause', selected.root_cause_match ? 'Pass' : 'Fail'], ['Recall', `${Math.round(selected.evidence_recall * 100)}%`], ['Precision', `${Math.round(selected.evidence_precision * 100)}%`], ['Confidence', `${Math.round(selected.confidence * 100)}%`], ['Action', selected.action_present ? 'Pass' : 'Fail']].map(([label, value]) => <div key={label} className="rounded-md bg-muted/50 p-3"><div className="text-[11px] text-muted-foreground">{label}</div><div className="mt-1 text-sm font-semibold">{value}</div></div>)}</div></div></>}</section>
+    {loading ? <div className="flex items-center gap-2 rounded-lg border p-6 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Loading runsâ€¦</div> : !runs.length ? <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No investigation runs are available to export.</div> : <div className="grid gap-6 lg:h-[calc(100vh-9rem)] lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card p-3"><div className="px-2 pb-3 text-sm font-semibold">Select run</div><div className="min-h-0 flex-1 overflow-y-auto pr-1"><div className="space-y-1">{runs.map((run) => <button key={run.run_id} type="button" onClick={() => void loadRun(run.run_id)} className={cn('w-full rounded-md px-3 py-2 text-left hover:bg-accent', selected?.run_id === run.run_id && 'bg-accent')}><div className="flex items-center justify-between gap-2"><span className="truncate text-xs font-medium">{run.run_id}</span>{run.passed ? <Check className="h-4 w-4 text-primary" /> : <CircleAlert className="h-4 w-4 text-muted-foreground" />}</div><div className="mt-1 text-xs text-muted-foreground">{run.scenario_id} Â· {run.mode}</div></button>)}</div></div></section>
+      <section className="min-h-0 min-w-0 overflow-y-auto pr-1 space-y-4">{selected && <><div className="rounded-lg border bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /><h2 className="text-lg font-semibold">Investigation report</h2></div><p className="mt-1 text-sm text-muted-foreground">{selected.run_id} Â· {selected.scenario_id}</p></div><div className="flex gap-2"><button type="button" onClick={exportMarkdown} className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"><Download className="h-4 w-4" />Markdown</button><button type="button" onClick={exportJson} className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"><Download className="h-4 w-4" />JSON</button></div></div></div><div className="grid gap-4 sm:grid-cols-2"><div className="rounded-lg border bg-card p-5"><div className="text-xs uppercase tracking-wide text-muted-foreground">Root cause</div><p className="mt-2 text-sm leading-6">{selected.diagnosis?.root_cause || 'Not available in this run.'}</p></div><div className="rounded-lg border bg-card p-5"><div className="text-xs uppercase tracking-wide text-muted-foreground">Recommended action</div><p className="mt-2 text-sm leading-6">{selected.diagnosis?.recommended_action || 'Not available in this run.'}</p></div></div><div className="rounded-lg border bg-card p-5"><div className="mb-3 text-sm font-semibold">Evaluation snapshot</div><div className="grid gap-3 sm:grid-cols-5">{[['Root cause', selected.root_cause_match ? 'Pass' : 'Fail'], ['Recall', `${Math.round(selected.evidence_recall * 100)}%`], ['Precision', `${Math.round(selected.evidence_precision * 100)}%`], ['Confidence', `${Math.round(selected.confidence * 100)}%`], ['Action', selected.action_present ? 'Pass' : 'Fail']].map(([label, value]) => <div key={label} className="rounded-md bg-muted/50 p-3"><div className="text-[11px] text-muted-foreground">{label}</div><div className="mt-1 text-sm font-semibold">{value}</div></div>)}</div></div></>}</section>
     </div>}
     {error && <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>}
   </div>
 }
+
+
+
+
