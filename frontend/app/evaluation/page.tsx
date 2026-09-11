@@ -32,7 +32,7 @@ const checks = [
   { key: 'root_cause_match', label: 'Root-cause match', description: 'The diagnosis contains every expected root-cause keyword.' },
   { key: 'evidence_recall', label: 'Evidence recall', description: 'Required evidence selected by the diagnosis.' },
   { key: 'evidence_precision', label: 'Evidence precision', description: 'Selected evidence that belongs to the scenario.' },
-  { key: 'confidence_valid', label: 'Confidence validity', description: 'Confidence is within the valid 0â€“1 range.' },
+  { key: 'confidence_valid', label: 'Confidence validity', description: 'Confidence is within the valid 0-1 range.' },
   { key: 'action_present', label: 'Recommended action', description: 'A non-empty remediation action is present.' },
 ] as const
 
