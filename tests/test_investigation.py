@@ -18,6 +18,15 @@ def test_baseline_investigator_returns_structured_diagnosis() -> None:
     assert diagnosis.recommended_action
 
 
+def test_baseline_investigator_reads_full_evidence_via_get() -> None:
+    """list is metadata-only; baseline must get each item to score keywords."""
+    scenario = SCENARIOS[0]
+    diagnosis = BaselineInvestigator(scenario).investigate(scenario.incident)
+    # Empty list content would leave confidence at the 0.5 floor.
+    assert diagnosis.confidence > 0.5
+    assert set(diagnosis.evidence_ids) == {item.id for item in scenario.evidence}
+
+
 def test_investigation_service_is_end_to_end() -> None:
     scenario = SCENARIOS[1]
     sink = InMemoryEventSink()
