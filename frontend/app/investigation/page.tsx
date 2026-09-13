@@ -1,1 +1,0 @@
-export default function InvestigationPage() { return <main className="space-y-6"><h1 className="text-2xl font-semibold">Investigation Workspace</h1><p className="text-muted-foreground">Select an investigation to inspect evidence, diagnosis, and recommended actions.</p></main> }
