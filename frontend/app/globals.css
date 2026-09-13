@@ -72,4 +72,18 @@
   .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
   .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.875rem; }
   .pb-10 { padding-bottom: 1.5rem; }
+
+  /* Small-screen guardrails for the investigation workspace and data-heavy cards. */
+  @media (max-width: 640px) {
+    .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+    pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    table { min-width: 34rem; }
+    input, select, textarea { min-width: 0; }
+  }
+
+  /* Make keyboard focus visible without changing the existing visual language. */
+  :where(button, a, input, select, textarea):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
 }
