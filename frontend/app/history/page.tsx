@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { History as HistoryIcon } from 'lucide-react'
 import { DataTable, type ColumnDef } from '@/components/data/data-table'
@@ -7,14 +8,14 @@ import { StatusBadge } from '@/components/data/status-badge'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { PageHeader } from '@/components/dashboard/page-header'
 
-type Run = Record<string, unknown> & { id?: string }
+type Run = Record<string, unknown> & { id?: string; run_id?: string }
 const API = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 export default function HistoryPage() {
   const [runs, setRuns] = useState<Run[]>([])
   useEffect(() => { void fetch(`${API}/runs?limit=50`).then(async (response) => { if (!response.ok) throw new Error('Unable to load history'); return response.json() }).then((items) => setRuns(items.map((item: Run, index: number) => ({ ...item, id: String(item.run_id ?? index) })))).catch(() => undefined) }, [])
   const columns: ColumnDef<Run>[] = [
-    { key: 'scenario_id', header: 'Scenario', sortable: true, render: (run) => <span className="block max-w-[240px] truncate font-medium" title={String(run.scenario_id || 'Investigation')}>{String(run.scenario_id || 'Investigation')}</span> },
+    { key: 'scenario_id', header: 'Scenario', sortable: true, render: (run) => <Link href={`/history/${encodeURIComponent(String(run.run_id ?? run.id ?? ''))}`} className="block max-w-[240px] truncate font-medium hover:underline" title={String(run.scenario_id || 'Investigation')}>{String(run.scenario_id || 'Investigation')}</Link> },
     { key: 'mode', header: 'Mode', sortable: true, render: (run) => <span className="whitespace-nowrap text-muted-foreground">{String(run.mode || 'baseline')} · {String(run.provider || 'baseline')}</span> },
     { key: 'confidence', header: 'Confidence', sortable: true, render: (run) => `${Math.round(Number(run.confidence ?? 0) * 100)}%` },
     { key: 'duration_ms', header: 'Duration', sortable: true, render: (run) => `${Math.round(Number(run.duration_ms ?? 0))} ms` },
