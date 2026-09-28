@@ -18,9 +18,16 @@ class Settings:
 
     @classmethod
     def from_environment(cls) -> "Settings":
+        environment = os.getenv("TRACEBACK_ENVIRONMENT", "development").strip().lower()
+        default_origins = (
+            "http://localhost:3000",
+            "http://localhost:3002",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3002",
+        ) if environment == "development" else ()
         origins = tuple(
             item.strip()
-            for item in os.getenv("TRACEBACK_CORS_ORIGINS", "").split(",")
+            for item in os.getenv("TRACEBACK_CORS_ORIGINS", ",".join(default_origins)).split(",")
             if item.strip()
         )
         settings = cls(
@@ -29,7 +36,7 @@ class Settings:
             ollama_timeout=float(os.getenv("TRACEBACK_OLLAMA_TIMEOUT", "60")),
             database_path=os.getenv("TRACEBACK_DATABASE_PATH", "data/traceback.db"),
             cors_origins=origins,
-            environment=os.getenv("TRACEBACK_ENVIRONMENT", "development").strip().lower(),
+            environment=environment,
             log_level=os.getenv("TRACEBACK_LOG_LEVEL", "INFO").strip().upper(),
             request_id_header=os.getenv("TRACEBACK_REQUEST_ID_HEADER", "X-Request-ID").strip(),
             rate_limit_requests=int(os.getenv("TRACEBACK_RATE_LIMIT_REQUESTS", "120")),

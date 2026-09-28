@@ -11,6 +11,7 @@ services:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       TRACEBACK_MODEL: llama3.2:3b
       TRACEBACK_ENVIRONMENT: production
+      TRACEBACK_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       TRACEBACK_DATABASE_PATH: /data/traceback.db
     volumes:
       - traceback-data:/data
