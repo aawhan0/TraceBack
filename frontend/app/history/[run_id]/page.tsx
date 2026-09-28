@@ -20,12 +20,12 @@ type Run = {
   mode: string
   provider: string
   passed: boolean
-  confidence: number | null
   duration_ms: number | null
   created_at: string
   diagnosis?: {
     root_cause: string
     evidence_ids: string[]
+    confidence: number | null
     recommended_action: string
   }
 }
@@ -129,9 +129,9 @@ export default function InvestigationDetailPage({
           ['Provider', run.provider],
           [
             'Confidence',
-            run.confidence == null
+            run.diagnosis?.confidence == null
               ? 'N/A'
-              : `${Math.round(run.confidence * 100)}%`,
+              : `${Math.round(run.diagnosis.confidence * 100)}%`,
           ],
           [
             'Duration',
