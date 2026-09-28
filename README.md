@@ -1,6 +1,10 @@
 # TraceBack
 
 > **Local-first LLM incident diagnosis and evaluation system for investigating production-like failures with MCP tools, structured evidence, and deterministic evaluation.**
+>
+> Trace production-style failures from **incident → evidence → diagnosis → deterministic evaluation → persisted history**.
+
+[![CI](https://github.com/aawhan0/TraceBack/actions/workflows/ci.yml/badge.svg)](https://github.com/aawhan0/TraceBack/actions/workflows/ci.yml) [![Python](https://img.shields.io/badge/Python-3.12%2B-blue)](https://www.python.org/) [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 
 ![TraceBack Dashboard](docs/traceback-preview.png)
 
@@ -68,6 +72,18 @@ flowchart TD
 The key engineering boundary is simple: **the investigator generates a diagnosis; deterministic code evaluates it.**
 
 See [docs/architecture.md](docs/architecture.md) for the detailed architecture notes.
+
+## Product Flow
+
+The main workflow is intentionally small and inspectable:
+
+1. **Select an incident** from the scenario catalog.
+2. **Run an investigation** using the deterministic baseline or an Ollama-backed LLM path.
+3. **Inspect evidence** selected by the diagnosis.
+4. **Evaluate the result** against deterministic scenario ground truth.
+5. **Review the persisted run** in History, including diagnosis, evidence, status, and runtime metadata.
+
+This makes the project easy to demo while keeping the evaluation boundary explicit.
 
 ## Current Scenarios
 
@@ -412,7 +428,7 @@ TraceBack complements rather than duplicates the rest of the portfolio:
 
 ## Status
 
-The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, Model Playground, custom MCP evidence sources, Incident Knowledge Base, functional Next.js web UI, and PyPI/CLI distribution are implemented. The project is now in final integration validation and portfolio-polish mode.
+The backend, evaluation system, persistence, runtime/job layer, Docker setup, CI/security hardening, custom scenario authoring, Model Playground, custom MCP evidence sources, Incident Knowledge Base, functional Next.js web UI, and PyPI/CLI distribution are implemented. The functional build has completed local end-to-end validation and the repository is in portfolio-ready maintenance mode.
 
 ## Author
 
