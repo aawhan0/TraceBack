@@ -134,36 +134,36 @@ flowchart LR
 
 The final 10-repetition benchmark used the three built-in scenarios, giving **30 investigation runs per configuration**.
 
-| Metric | Deterministic baseline | Qwen 2.5 3B |
-| --- | ---: | ---: |
-| Runs | 30 | 30 |
-| Pass rate | **100.00%** | 10.00% |
-| Root-cause accuracy | **100.00%** | 10.00% |
-| Average confidence | 75.0% | **90.0%** |
-| Average duration | **0.09 ms** | 2289.78 ms |
-| Database pool exhaustion | 100.00% | 10.00% |
-| Redis connectivity failure | 100.00% | 0.00% |
-| Runaway worker CPU | 100.00% | 20.00% |
+| Metric | Deterministic baseline | Qwen 2.5 3B | Llama 3.2 3B |
+| --- | ---: | ---: | ---: |
+| Runs | 30 | 30 | 30 |
+| Pass rate | **100.00%** | 10.00% | 3.33% |
+| Root-cause accuracy | **100.00%** | 10.00% | 3.33% |
+| Average confidence | 75.0% | **90.0%** | 87.33% |
+| Average duration | **0.09 ms** | 2289.78 ms | 2459.93 ms |
+| Database pool exhaustion | 100.00% | 10.00% | 0.00% |
+| Redis connectivity failure | 100.00% | 0.00% | 0.00% |
+| Runaway worker CPU | 100.00% | 20.00% | 10.00% |
 
 ```mermaid
 xychart-beta
     title "Final Benchmark Pass Rate"
-    x-axis ["Baseline", "Qwen 2.5 3B"]
+    x-axis ["Baseline", "Qwen 2.5 3B", "Llama 3.2 3B"]
     y-axis "Pass Rate (%)" 0 --> 100
-    bar [100, 10]
+    bar [100, 10, 3.33]
 ```
 
 ```mermaid
 xychart-beta
     title "Final Benchmark Root-Cause Accuracy"
-    x-axis ["Baseline", "Qwen 2.5 3B"]
+    x-axis ["Baseline", "Qwen 2.5 3B", "Llama 3.2 3B"]
     y-axis "Accuracy (%)" 0 --> 100
-    bar [100, 10]
+    bar [100, 10, 3.33]
 ```
 
-The baseline regression gate passed. The Qwen experiment failed the configured 100% pass-rate/root-cause threshold, which is intentional: TraceBack is designed to surface model reliability gaps rather than hide them.
+The baseline regression gate passed. The Ollama experiments failed the configured 100% pass-rate/root-cause threshold, which is intentional: TraceBack is designed to surface model reliability gaps rather than hide them.
 
-> These figures are a local benchmark snapshot, not a claim of general model capability. Hardware, model version, Ollama configuration, prompts, scenario definitions, and repetitions can change the observed results.
+> These figures are local benchmark snapshots, not claims of general model capability. Hardware, model version, Ollama configuration, prompts, scenario definitions, and repetitions can change the observed results.
 
 ## Install from PyPI
 
