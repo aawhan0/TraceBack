@@ -55,7 +55,7 @@ jobs:
           trivyignores: .trivyignore
 
       - name: Generate SBOM
-        uses: anchore/sbom-action@v0.20.5
+        uses: anchore/sbom-action@v0.24.2
         with:
           image: traceback:security
           artifact-name: traceback-sbom.spdx.json
